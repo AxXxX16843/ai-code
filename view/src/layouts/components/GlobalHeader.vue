@@ -1,26 +1,53 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { MenuOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { MenuOutlined, LogoutOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import logo from '@/assets/logo.png'
-import { menuItems } from '@/config/menu'
+import { menuItems as originMenuItems } from '@/config/menu'
+import { useLoginUserStore } from '@/stores/loginUser'
+import { logout } from '@/api/userController'
 
 // 网站标题（可在此配置）
 const siteTitle = 'AI Code'
 
 const router = useRouter()
 const route = useRoute()
+const loginUserStore = useLoginUserStore()
 
 const selectedKeys = computed(() => [route.path])
 const drawerOpen = ref(false)
+
+// 过滤菜单项：/admin 开头的菜单仅管理员可见
+const menuItems = computed(() => {
+  return originMenuItems.filter((menu) => {
+    if (menu.key?.startsWith('/admin')) {
+      return loginUserStore.loginUser?.userRole === 'admin'
+    }
+    return true
+  })
+})
 
 function handleMenuClick({ key }) {
   router.push(key)
   drawerOpen.value = false
 }
 
-// 登录占位：后续接入真实登录逻辑
-function handleLogin() {}
+function handleLogin() {
+  router.push('/user/login')
+}
+
+// 用户注销
+const doLogout = async () => {
+  const res = await logout()
+  if (res.data.code === 0) {
+    loginUserStore.setLoginUser({ userName: '未登录' })
+    message.success('退出登录成功')
+    await router.push('/user/login')
+  } else {
+    message.error('退出登录失败，' + res.data.message)
+  }
+}
 </script>
 
 <template>
@@ -42,12 +69,27 @@ function handleLogin() {}
         />
       </div>
 
-      <!-- 右侧：登录按钮（移动端为汉堡菜单） -->
+      <!-- 右侧：登录状态 / 登录按钮 -->
       <div class="header-right">
-        <a-button class="login-btn" type="text" @click="handleLogin">
-          <template #icon><UserOutlined /></template>
-          登录
-        </a-button>
+        <div v-if="loginUserStore.loginUser.id" class="user-login-status">
+          <a-dropdown>
+            <a-space>
+              <a-avatar :src="loginUserStore.loginUser.userAvatar" />
+              {{ loginUserStore.loginUser.userName ?? '无名' }}
+            </a-space>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item @click="doLogout">
+                  <LogoutOutlined />
+                  退出登录
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </div>
+        <div v-else>
+          <a-button type="primary" @click="handleLogin">登录</a-button>
+        </div>
         <a-button class="menu-trigger" type="text" @click="drawerOpen = true">
           <template #icon><MenuOutlined /></template>
         </a-button>
@@ -120,6 +162,10 @@ function handleLogin() {}
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.user-login-status {
+  cursor: pointer;
 }
 
 /* 桌面端隐藏汉堡按钮 */

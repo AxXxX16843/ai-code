@@ -6,9 +6,10 @@ import io.swagger.v3.oas.annotations.Hidden;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@ControllerAdvice
+@RestControllerAdvice
 @Hidden
 @Slf4j
 public class GlobalExceptionHandler {
@@ -16,7 +17,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = BusinessException.class)
     public BaseResponse<?> handleBusinessException(BusinessException e) {
-
         log.error(e.getMessage(), e);
         return ResultUtils.error(e.getCode(), e.getMessage());
     }
