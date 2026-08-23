@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "openapi2ts": "openapi2ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -11,18 +12,24 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
+    "ant-design-vue": "^4.2.6",
+    "axios": "^1.19.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
+    "@umijs/openapi": "^1.14.1",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/eslint-config-prettier": "^10.2.0",
     "eslint": "^9.29.0",
     "eslint-plugin-vue": "~10.2.0",
     "globals": "^16.2.0",
     "prettier": "3.5.3",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3",
     "vite": "^7.0.0",
     "vite-plugin-vue-devtools": "^7.7.7"
   }
