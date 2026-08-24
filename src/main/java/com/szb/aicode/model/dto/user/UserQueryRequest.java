@@ -1,22 +1,22 @@
-package com.szb.aicode.model.dto;
+package com.szb.aicode.model.dto.user;
 
-import com.mybatisflex.annotation.Column;
+import com.szb.aicode.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class UserAddRequest implements Serializable {
+public class UserQueryRequest extends PageRequest implements Serializable {
 
-    private String userAccount;
-
-
-
+    private Long id;
     /**
      * 用户昵称
      */
     private String userName;
+
+    private String Account;
 
     /**
      * 用户头像

@@ -1,15 +1,16 @@
-package com.szb.aicode.model.dto;
+package com.szb.aicode.model.dto.user;
 
 import lombok.Data;
 
 import java.io.Serializable;
 
-
 @Data
-public class UserUpdateRequest implements Serializable {
+public class UserAddRequest implements Serializable {
+
+    private String userAccount;
 
 
-    private Long id;
+
     /**
      * 用户昵称
      */
@@ -29,7 +30,6 @@ public class UserUpdateRequest implements Serializable {
      * 用户角色：user/admin
      */
     private String userRole;
-
 
 
 

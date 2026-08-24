@@ -1,4 +1,4 @@
-package com.szb.aicode.model.dto;
+package com.szb.aicode.model.dto.user;
 
 
 import lombok.Data;
