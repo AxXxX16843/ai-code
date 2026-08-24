@@ -193,4 +193,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
 
     }
 
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        User CUser = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
+        if(CUser==null || CUser.getId()==null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+        }
+        CUser = this.getById(CUser.getId());
+        return CUser;
+    }
+
 }

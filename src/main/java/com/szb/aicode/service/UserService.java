@@ -39,4 +39,6 @@ public interface UserService extends IService<User> {
 
     QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 
+    User getLoginUser(HttpServletRequest request);
+
 }

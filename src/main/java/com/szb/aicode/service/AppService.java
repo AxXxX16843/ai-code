@@ -1,7 +1,12 @@
 package com.szb.aicode.service;
 
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.szb.aicode.model.dto.app.AppQueryRequest;
 import com.szb.aicode.model.entity.App;
+import com.szb.aicode.model.vo.AppVo;
+
+import java.util.List;
 
 /**
  * 应用 服务层。
@@ -11,4 +16,9 @@ import com.szb.aicode.model.entity.App;
  */
 public interface AppService extends IService<App> {
 
+    AppVo getAppVO(App app);
+
+    QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
+
+    List<AppVo> getAppVOList(List<App> appList);
 }

@@ -12,5 +12,4 @@ public class UserDeleteRequest implements Serializable {
 
     private Long id;
 
-
 }
