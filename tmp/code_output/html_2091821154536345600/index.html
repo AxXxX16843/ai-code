@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>轻语 · 留言板</title>
+  <style>
+    /* 极简留言板 — 灵动、干净，仅原生实现 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(145deg, #f7f9fc 0%, #e9eef4 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .board {
+      max-width: 800px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 40px;
+      box-shadow: 0 30px 50px -20px rgba(0, 10, 30, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+      padding: 2rem 2rem 2.5rem;
+      transition: all 0.2s ease;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #1e2b3c;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 2px solid rgba(30, 43, 60, 0.1);
+      padding-bottom: 1rem;
+    }
+
+    h1::before {
+      content: '💬';
+      font-size: 2rem;
+      filter: drop-shadow(0 4px 4px rgba(0,0,0,0.05));
+    }
+
+    /* 留言展示区 — 优雅滚动 */
+    .message-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-bottom: 1.8rem;
+      scroll-behavior: smooth;
+      /* 细滑滚动条 */
+      scrollbar-width: thin;
+      scrollbar-color: #b6c8d9 transparent;
+    }
+
+    .message-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .message-scroll::-webkit-scrollbar-thumb {
+      background: #b6c8d9;
+      border-radius: 20px;
+    }
+
+    .message-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      list-style: none;
+    }
+
+    .msg-item {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.02);
+      transition: transform 0.15s;
+      font-size: 1rem;
+      line-height: 1.45;
+      word-break: break-word;
+      position: relative;
+      animation: rise 0.3s ease;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-item strong {
+      font-weight: 600;
+      color: #0f2b45;
+      margin-right: 1rem;
+    }
+
+    .msg-item span {
+      color: #2d4059;
+    }
+
+    /* 发布区 — 浮动卡片感 */
+    .publish-card {
+      background: #f3f6fb;
+      border-radius: 30px;
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      box-shadow: 0 8px 20px -8px rgba(0, 20, 40, 0.1);
+    }
+
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .input-field {
+      flex: 2 1 180px;
+      background: white;
+      border: 1px solid #d9e1ec;
+      border-radius: 60px;
+      padding: 0.8rem 1.25rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      color: #1c2e40;
+    }
+
+    .input-field:focus {
+      border-color: #4b7bec;
+      box-shadow: 0 0 0 4px rgba(75, 123, 236, 0.15);
+    }
+
+    .input-field::placeholder {
+      color: #a2b6cc;
+      font-weight: 300;
+    }
+
+    .btn-post {
+      flex: 1 0 120px;
+      background: #1e2b3c;
+      color: white;
+      font-weight: 600;
+      border: none;
+      border-radius: 60px;
+      padding: 0.8rem 1.5rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.05s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      letter-spacing: 0.3px;
+    }
+
+    .btn-post:hover {
+      background: #2b3e58;
+    }
+
+    .btn-post:active {
+      transform: scale(0.96);
+    }
+
+    .btn-post:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #7c8aa0;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #6e7f94;
+      margin-top: 0.3rem;
+      padding-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="board" aria-label="留言板">
+    <!-- 标题 -->
+    <h1> 旅人的絮语</h1>
+
+    <!-- 留言展示列表 -->
+    <div class="message-scroll" aria-live="polite">
+      <ul class="message-list" id="messageList">
+        <!-- 占位留言 (动态js渲染也会保留) 但为了初始内容，放两条静态占位 更丰富 -->
+        <li class="msg-item"><strong>晚风</strong><span>山野的薄雾里，藏着昨日的梦。</span></li>
+        <li class="msg-item"><strong>Kian</strong><span>代码也能写诗，尤其是干净的原生JS。</span></li>
+      </ul>
+    </div>
+
+    <!-- 发布卡片 -->
+    <div class="publish-card">
+      <div class="input-group">
+        <input type="text" id="nameInput" class="input-field" placeholder="你的名字 (可选)" maxlength="18" autocomplete="off">
+        <input type="text" id="messageInput" class="input-field" placeholder="写下一句留言…" maxlength="120" autocomplete="off">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+        <button class="btn-post" id="postBtn">✏️ 发布留言</button>
+        <span class="hint">✦ 轻按发布 · 即刻上墙</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function() {
+      "use strict";
+
+      // ---------- 原生留言板逻辑 ----------
+      const messageList = document.getElementById('messageList');
+      const nameInput = document.getElementById('nameInput');
+      const messageInput = document.getElementById('messageInput');
+      const postBtn = document.getElementById('postBtn');
+
+      // 默认初始留言（若列表中已有静态占位，则不再重复添加）
+      const seedMessages = [
+        { name: '晚风', text: '山野的薄雾里，藏着昨日的梦。' },
+        { name: 'Kian', text: '代码也能写诗，尤其是干净的原生JS。' }
+      ];
+
+      // 将种子留言渲染为 <li>  (仅当列表为空时渲染，避免与静态占位重复)
+      function renderSeedMessages() {
+        // 检查是否已有子节点
+        if (messageList.children.length === 0) {
+          seedMessages.forEach(msg => {
+            addMessageElement(msg.name, msg.text, false); // 不触发动画 (已用动画)
+          });
+        }
+      }
+
+      // 创建一个留言 <li> 并追加到列表
+      function addMessageElement(name, text, animate = true) {
+        const li = document.createElement('li');
+        li.className = 'msg-item';
+
+        const strong = document.createElement('strong');
+        strong.textContent = name || '匿名旅人';
+
+        const span = document.createElement('span');
+        span.textContent = text;
+
+        li.appendChild(strong);
+        li.appendChild(span);
+
+        // 如果开启动画，赋予动画类 (移除再添加强制触发)
+        if (animate) {
+          li.style.animation = 'none';
+          li.offsetHeight; // 强制重绘
+          li.style.animation = 'rise 0.3s ease';
+        }
+
+        messageList.appendChild(li);
+
+        // 自动滚动到最新消息
+        const scrollParent = messageList.closest('.message-scroll');
+        if (scrollParent) {
+          scrollParent.scrollTo({
+            top: scrollParent.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+
+        return li;
+      }
+
+      // 发布新留言
+      function publishMessage() {
+        const rawName = nameInput.value.trim();
+        const rawMessage = messageInput.value.trim();
+
+        // 如果消息为空, 不提交
+        if (rawMessage === '') {
+          messageInput.focus();
+          messageInput.style.borderColor = '#e55039';
+          setTimeout(() => messageInput.style.borderColor = '', 800);
+          return;
+        }
+
+        // 名字为空时使用默认名
+        const displayName = rawName !== '' ? rawName : '👤 旅人';
+
+        // 添加新留言
+        addMessageElement(displayName, rawMessage, true);
+
+        // 清空输入框 (保留名字)
+        messageInput.value = '';
+        // 如果名字长度>10 可截断展示但此处保留原样
+        // 保持焦点
+        messageInput.focus();
+      }
+
+      // 绑定发布事件（点击 + 回车）
+      function bindEvents() {
+        postBtn.addEventListener('click', publishMessage);
+
+        // 按回车快捷发布 (在messageInput中)
+        messageInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            publishMessage();
+          }
+        });
+
+        // 名字输入框回车也跳到消息框
+        nameInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            messageInput.focus();
+          }
+        });
+      }
+
+      // 初始：确保静态占位在列表中（如果HTML里已有两个占位li, 不重复）
+      // 如果静态占位没有被更改，则不需要额外添加；但为了逻辑稳固，
+      // 如果列表中没有 .msg-item 则手动插入种子。
+      document.addEventListener('DOMContentLoaded', () => {
+        // 若没有.msg-item，添加种子
+        if (messageList.querySelectorAll('.msg-item').length === 0) {
+          renderSeedMessages();
+        }
+
+        // 如果目前列表只有空，也塞入种子
+        bindEvents();
+      });
+
+      // 保证即使DOMContentLoaded已过，仍然初始化（防御）
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(() => {
+          if (messageList.querySelectorAll('.msg-item').length === 0) {
+            renderSeedMessages();
+          }
+          bindEvents();
+        }, 10);
+      }
+
+      // 附加: 若手动删除所有留言，可以重放种子（供测试）— 但在此不额外加
+    })();
+  </script>
+</body>
+</html>

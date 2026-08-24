@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人简介 · 卡片</title>
+  <style>
+    /* 极简风格 — 仅用flex布局，内联所有样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f4f7fb;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      padding: 1rem;
+    }
+    .card {
+      max-width: 340px;
+      width: 100%;
+      background: white;
+      border-radius: 2rem;
+      padding: 2rem 1.5rem 1.8rem;
+      box-shadow: 0 20px 35px -8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    /* 小而优雅的头像占位 */
+    .avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #d0e2ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.8rem;
+    }
+    .avatar span {
+      font-size: 2.5rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+    }
+    .title {
+      font-size: 0.9rem;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+    .bio {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #334155;
+      margin-bottom: 1.4rem;
+      padding: 0 0.2rem;
+    }
+    .tagline-meta {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      width: 100%;
+      margin-bottom: 1.3rem;
+      font-size: 0.8rem;
+      color: #475569;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .meta-num {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #0f172a;
+    }
+    .btn {
+      background: #1e293b;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.8rem;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #0b1622;
+    }
+    /* 纯JS显示隐藏消息 */
+    #notice {
+      min-height: 0.6rem;
+      font-size: 0.8rem;
+      margin-top: 0.8rem;
+      color: #2563eb;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <!-- 头像占位: 使用Emoji 和 渐变背景 -->
+    <div class="avatar" aria-label="头像占位">
+      <span>👩‍💻</span>
+    </div>
+    <!-- 核心简介 -->
+    <h1 class="name">林晓芸</h1>
+    <div class="title">前端工程师 · 创意开发者</div>
+    <p class="bio">
+      热爱构建轻快、友好的界面。相信代码是设计的一部分，
+      专注于极致的细节与微交互体验。
+    </p>
+
+    <!-- 三个轻量元数据 -->
+    <div class="tagline-meta">
+      <div class="meta-item"><span class="meta-num">6+</span><span>项目</span></div>
+      <div class="meta-item"><span class="meta-num">3k</span><span>粉丝</span></div>
+      <div class="meta-item"><span class="meta-num">10</span><span>文章</span></div>
+    </div>
+
+    <!-- 简单交互: 点击按钮显示问候 -->
+    <button class="btn" id="greetBtn">say hi ✨</button>
+    <div id="notice"></div>
+  </main>
+
+  <script>
+    // 原生JS — 轻量交互反馈
+    const btn = document.getElementById('greetBtn');
+    const notice = document.getElementById('notice');
+    btn.addEventListener('click', () => {
+      const hour = new Date().getHours();
+      let greeting = '🌤️ 你好呀！';
+      if (hour < 6) greeting = '🌙 夜深了，注意休息';
+      else if (hour < 12) greeting = '☀️ 早上好，保持活力';
+      else if (hour < 18) greeting = '🍵 下午好，享受创作';
+      else greeting = '✨ 晚上好，继续加油';
+      notice.textContent = greeting + '  我是林晓芸，很高兴认识你！';
+    });
+  </script>
+</body>
+</html>

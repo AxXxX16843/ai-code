@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>个人简介 · 简约卡片</title>
+    <!-- 引用外部 CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 主容器：卡片式个人简介 -->
+    <main class="profile-card">
+        <!-- 头像区（占位图服务） -->
+        <figure class="avatar-frame">
+            <img src="https://picsum.photos/160/160?random=1" alt="头像占位图" width="160" height="160">
+        </figure>
+
+        <!-- 姓名 + 头衔 -->
+        <h1 class="name">林 小 溪</h1>
+        <p class="title">前端开发 / 设计爱好者</p>
+
+        <!-- 一句话简介（有意占位） -->
+        <p class="bio">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.</p>
+
+        <!-- 联系按钮（交互由 script.js 控制） -->
+        <button id="greetBtn" class="action-btn">👋 打个招呼</button>
+        <p id="greetMessage" class="greet-msg" aria-live="polite"></p>
+    </main>
+
+    <!-- 引入外部 JavaScript 文件（放在 </body> 前） -->
+    <script src="script.js"></script>
+</body>
+</html>

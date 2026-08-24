@@ -20,3 +20,21 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+langchain4j:
+  open-ai:
+    chat-model:
+      api-key: 'sk-c97d2f988a7940fa9bcc86e621138732'
+      model-name: 'deepseek-chat'
+      base-url: 'https://api.deepseek.com'
+      log-requests: true
+      log-responses: true
+      response-format: json_object
+      strict-json-schema: true
+      max-tokens: 8192
+    streaming-chat-model:
+      api-key: 'sk-c97d2f988a7940fa9bcc86e621138732'
+      model-name: 'deepseek-chat'
+      base-url: 'https://api.deepseek.com'
+      log-requests: true
+      log-responses: true
+      max-tokens: 8192

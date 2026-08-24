@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人简介 · 简约卡片</title>
+  <!-- 样式表引入 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="profile-card">
+    <!-- 头像区 -->
+    <div class="avatar-wrapper">
+      <img src="https://picsum.photos/200/200?random=10" alt="个人头像" class="avatar">
+    </div>
+    <!-- 基本信息 -->
+    <h1 class="name">林晓 · 前端工程师</h1>
+    <p class="bio">热爱用代码构建优雅交互，四年前端经验，专注性能优化与组件化设计。</p>
+    <!-- 技能标签 (简单flex布局) -->
+    <div class="skill-tags">
+      <span class="tag">JavaScript</span>
+      <span class="tag">TypeScript</span>
+      <span class="tag">React</span>
+      <span class="tag">Node</span>
+    </div>
+    <!-- 社交链接 -->
+    <div class="social-links">
+      <a href="#" class="social-btn" aria-label="GitHub">GitHub</a>
+      <a href="#" class="social-btn" aria-label="掘金">掘金</a>
+      <a href="#" class="social-btn" aria-label="Email">Email</a>
+    </div>
+    <!-- 一句话简介 · 动态打字效果 (JS控制) -->
+    <p class="type-line" id="typewriter"></p>
+  </main>
+  <!-- 引入脚本 -->
+  <script src="script.js" defer></script>
+</body>
+</html>

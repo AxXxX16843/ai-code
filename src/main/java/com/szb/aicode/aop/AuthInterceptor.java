@@ -1,4 +1,4 @@
-package com.szb.aicode.common;
+package com.szb.aicode.aop;
 
 
 import com.szb.aicode.annotation.AuthCheck;
@@ -9,7 +9,6 @@ import com.szb.aicode.model.enums.UserRoleEnum;
 import com.szb.aicode.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.tomcat.util.descriptor.web.ContextHandler;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
