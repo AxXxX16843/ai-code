@@ -1,4 +1,56 @@
 declare namespace API {
+  type AppAddRequest = {
+    initPrompt?: string
+  }
+
+  type AppAdminUpdateRequest = {
+    id?: number
+    appName?: string
+    cover?: string
+    priority?: number
+  }
+
+  type AppQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    id?: number
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: string
+    deployKey?: string
+    priority?: number
+    userId?: number
+  }
+
+  type AppUpdateRequest = {
+    id?: number
+    appName?: string
+  }
+
+  type AppVo = {
+    id?: number
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: string
+    deployKey?: string
+    deployedTime?: string
+    priority?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+    userVo?: UserVo
+  }
+
+  type BaseResponseAppVo = {
+    code?: number
+    data?: AppVo
+    message?: string
+  }
+
   type BaseResponseBoolean = {
     code?: number
     data?: boolean
@@ -8,6 +60,12 @@ declare namespace API {
   type BaseResponseLong = {
     code?: number
     data?: number
+    message?: string
+  }
+
+  type BaseResponsePageAppVo = {
+    code?: number
+    data?: PageAppVo
     message?: string
   }
 
@@ -41,12 +99,42 @@ declare namespace API {
     message?: string
   }
 
+  type DeleteRequest = {
+    id?: number
+  }
+
+  type deployParams = {
+    appId: number
+  }
+
+  type geneParams = {
+    message: string
+    appId: number
+  }
+
+  type getAppVOByIdByAdminParams = {
+    id: number
+  }
+
+  type getAppVOByIdParams = {
+    id: number
+  }
+
   type getUserParams = {
     id: number
   }
 
   type getUserVoParams = {
     id: number
+  }
+
+  type PageAppVo = {
+    records?: AppVo[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
   }
 
   type PageUserVo = {
@@ -62,6 +150,12 @@ declare namespace API {
     username?: string
     password?: string
     check?: string
+  }
+
+  type ServerSentEventString = true
+
+  type serveStaticResourceParams = {
+    deployKey: string
   }
 
   type User = {

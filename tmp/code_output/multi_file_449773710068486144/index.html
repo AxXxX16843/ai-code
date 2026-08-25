@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小灶食光 · 简易食谱</title>
+  <!-- 样式表 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 网站头部 -->
+  <header class="site-header">
+    <h1>🍳 小灶食光</h1>
+    <p class="tagline">简单 · 家常 · 治愈的味道</p>
+  </header>
+
+  <!-- 菜谱卡片网格（响应式） -->
+  <main class="recipe-grid">
+    <!-- 菜谱1：番茄炒蛋 -->
+    <article class="recipe-card">
+      <img src="https://picsum.photos/seed/tomato-egg/400/250" alt="番茄炒蛋" class="card-img">
+      <div class="card-body">
+        <h2 class="recipe-title">番茄炒蛋</h2>
+        <p class="desc">酸甜多汁，10分钟快手下饭菜。</p>
+        <div class="ingredients">
+          <h3>📋 食材</h3>
+          <ul>
+            <li>番茄 2个</li>
+            <li>鸡蛋 3枚</li>
+            <li>葱花 / 盐 / 糖</li>
+          </ul>
+        </div>
+        <button class="fav-btn" data-id="r1">♡ 收藏食谱</button>
+      </div>
+    </article>
+
+    <!-- 菜谱2：蒜蓉西兰花 -->
+    <article class="recipe-card">
+      <img src="https://picsum.photos/seed/broccoli/400/250" alt="蒜蓉西兰花" class="card-img">
+      <div class="card-body">
+        <h2 class="recipe-title">蒜蓉西兰花</h2>
+        <p class="desc">脆嫩清爽，低卡高纤维。</p>
+        <div class="ingredients">
+          <h3>📋 食材</h3>
+          <ul>
+            <li>西兰花 1颗</li>
+            <li>蒜末 3瓣</li>
+            <li>生抽 / 蚝油</li>
+          </ul>
+        </div>
+        <button class="fav-btn" data-id="r2">♡ 收藏食谱</button>
+      </div>
+    </article>
+
+    <!-- 菜谱3：香煎鸡胸肉 -->
+    <article class="recipe-card">
+      <img src="https://picsum.photos/seed/chicken/400/250" alt="香煎鸡胸肉" class="card-img">
+      <div class="card-body">
+        <h2 class="recipe-title">香煎鸡胸肉</h2>
+        <p class="desc">外焦里嫩，低脂高蛋白。</p>
+        <div class="ingredients">
+          <h3>📋 食材</h3>
+          <ul>
+            <li>鸡胸 1块</li>
+            <li>黑胡椒 / 盐</li>
+            <li>橄榄油 1勺</li>
+          </ul>
+        </div>
+        <button class="fav-btn" data-id="r3">♡ 收藏食谱</button>
+      </div>
+    </article>
+
+    <!-- 菜谱4：凉拌黄瓜（额外卡片保持丰富） -->
+    <article class="recipe-card">
+      <img src="https://picsum.photos/seed/cucumber/400/250" alt="凉拌黄瓜" class="card-img">
+      <div class="card-body">
+        <h2 class="recipe-title">凉拌黄瓜</h2>
+        <p class="desc">爽口开胃，3分钟搞定。</p>
+        <div class="ingredients">
+          <h3>📋 食材</h3>
+          <ul>
+            <li>黄瓜 2根</li>
+            <li>蒜泥 / 醋 / 香油</li>
+            <li>小米辣 可选</li>
+          </ul>
+        </div>
+        <button class="fav-btn" data-id="r4">♡ 收藏食谱</button>
+      </div>
+    </article>
+  </main>
+
+  <!-- 烹饪小贴士 (附加内容) -->
+  <section class="tips-section">
+    <h2>👨‍🍳 烹饪小贴士</h2>
+    <ul class="tips-list">
+      <li>✨ 番茄炒蛋加少许糖更提鲜。</li>
+      <li>🥦 西兰花焯水后过凉水保持翠绿。</li>
+      <li>🍗 鸡胸肉用刀背拍松，煎前腌10分钟更嫩。</li>
+    </ul>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="site-footer">
+    <p>© 小灶食光 · 所有菜谱均为家常灵感</p>
+    <p>图片来自 <a href="https://picsum.photos" target="_blank" rel="noopener">picsum.photos</a></p>
+  </footer>
+
+  <!-- 交互脚本 -->
+  <script src="script.js"></script>
+</body>
+</html>

@@ -2,21 +2,32 @@ package com.szb.aicode.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.szb.aicode.constant.AppConstant;
+import com.szb.aicode.core.AICodeGeneratorFaced;
 import com.szb.aicode.exception.BusinessException;
 import com.szb.aicode.exception.ErrorCode;
+import com.szb.aicode.exception.ThrowUtils;
 import com.szb.aicode.model.dto.app.AppQueryRequest;
 import com.szb.aicode.model.entity.App;
 import com.szb.aicode.mapper.AppMapper;
 import com.szb.aicode.model.entity.User;
+import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.model.vo.AppVo;
 import com.szb.aicode.model.vo.UserVo;
 import com.szb.aicode.service.AppService;
 import com.szb.aicode.service.UserService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
+import java.io.File;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +41,72 @@ import java.util.stream.Collectors;
  * @since 2026-08-24
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
 
     @Resource
     private UserService userService;
 
+    @Resource
+    private AICodeGeneratorFaced aiCodeGeneratorFaced;
 
+
+
+    @Override
+    public Flux<String> chatToGeneCode(String message, Long appId, User loginUser) {
+        ThrowUtils.throwIf(message==null,ErrorCode.PARAMS_ERROR,"提示词不能为空");
+        ThrowUtils.throwIf(appId==null && appId<0,ErrorCode.PARAMS_ERROR,"应用id错误");
+        App app = getById(appId);
+        if(app==null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"应用不存在");
+        }
+        String codeGenType = app.getCodeGenType();
+        GeneratorTypeEnum byValue = GeneratorTypeEnum.getByValue(codeGenType);
+        if(byValue==null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"不支持的生成类型");
+        }
+
+        return aiCodeGeneratorFaced.generatorAndSaveFluxStream(message, byValue, appId);
+
+    }
+
+    @Override
+    public String deployCode(Long appId, User loginUser) {
+
+        ThrowUtils.throwIf(appId==null||appId<0,ErrorCode.NOT_FOUND_ERROR,"应用id错误");
+
+        ThrowUtils.throwIf(loginUser==null,ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+
+        App app = getById(appId);
+        if(app==null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"应用不存在请先创建");
+        }
+        String deployKey = app.getDeployKey();
+        if(deployKey==null){
+            deployKey = RandomUtil.randomString(6);
+        }
+        app.setDeployKey(deployKey);
+        String codeGenType = app.getCodeGenType();
+        String dirName=codeGenType+"_"+appId;
+        String dirPath= AppConstant.CODE_OUTPUT_ROOT_DIR+ File.separator+dirName;
+        File resource = new File(dirPath);
+        String deployDir=AppConstant.CODE_DEPLOY_ROOT_DIR+File.separator+deployKey;
+        File deploy = new File(deployDir);
+        try {
+            FileUtil.copyContent(resource,deploy,true);
+        }catch (Exception e){
+            System.out.println("源目录存在? " + resource.exists() + " -> " + resource.getAbsolutePath());
+            System.out.println("目标父目录存在? " + deploy.getParentFile().exists() + " -> " + deploy.getParent());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署失败");
+        }
+        app.setDeployedTime(LocalDateTime.now());
+        boolean updateResult = updateById(app);
+        if(!updateResult){
+
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署信息更新失败");
+        }
+        return AppConstant.CODE_DEPLOY_HOST+File.separator+deployKey;
+    }
 
     @Override
     public AppVo getAppVO(App app){
@@ -92,4 +163,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             return appVO;
         }).collect(Collectors.toList());
     }
+
+
 }

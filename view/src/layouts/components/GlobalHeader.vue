@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MenuOutlined, LogoutOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import logo from '@/assets/logo.png'
+import AppLogo from '@/components/AppLogo.vue'
 import { menuItems as originMenuItems } from '@/config/menu'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { logout } from '@/api/userController'
@@ -55,7 +55,7 @@ const doLogout = async () => {
     <div class="header-inner">
       <!-- 左侧：logo + 标题 -->
       <div class="header-left">
-        <img class="header-logo" :src="logo" alt="logo" />
+        <AppLogo :size="32" />
         <span class="header-title">{{ siteTitle }}</span>
       </div>
 

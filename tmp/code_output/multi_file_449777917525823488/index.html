@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>神秘农场 · 登山品牌</title>
+  <style>
+    /* style.css — 极简·神秘·山野 */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+      background: #0b1410; /* 深苔藓黑绿 */
+      color: #e9e2d8;       /* 骨白 */
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .mystic-farm {
+      max-width: 1300px;
+      width: 100%;
+      background: #1a241e;   /* 松针暗绿 */
+      border-radius: 2.5rem 2.5rem 2rem 2rem;
+      overflow: hidden;
+      box-shadow: 0 30px 40px -20px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(220, 200, 160, 0.15);
+      display: grid;
+      grid-template-columns: 1fr 1fr;  /* 左右分栏 */
+      border: 1px solid #3f5a4b;
+    }
+
+    /* 左侧：品牌叙事 */
+    .brand-panel {
+      padding: 2.8rem 2.5rem;
+      background: radial-gradient(circle at 15% 10%, #2c3e2d, #131c14 90%);
+    }
+
+    .brand-panel h1 {
+      font-size: 3.4rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: #e4d5ba;
+      line-height: 1.05;
+      border-left: 6px solid #c4a26b;
+      padding-left: 1.4rem;
+      margin-bottom: 1.2rem;
+      text-shadow: 0 0 18px rgba(196, 162, 107, 0.4);
+    }
+
+    .brand-panel h1 em {
+      font-style: normal;
+      display: block;
+      font-size: 2.1rem;
+      letter-spacing: 0.3em;
+      color: #ad9e7f;
+      margin-top: 0.3rem;
+    }
+
+    .brand-desc {
+      font-size: 1.15rem;
+      color: #c7c1b2;
+      max-width: 35ch;
+      margin: 2rem 0 0 1rem;
+      border-right: 2px solid #536b5a;
+      padding-right: 1.5rem;
+    }
+
+    .motto {
+      margin-top: 2.8rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      color: #a29e8a;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .motto::after {
+      content: '';
+      height: 1px;
+      width: 90px;
+      background: linear-gradient(90deg, #c4a26b, transparent);
+    }
+
+    /* 右侧：视觉 + 细节 */
+    .mountain-visual {
+      background: #1e2b22;
+      padding: 1rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 380px;
+      box-shadow: inset 8px 0 20px rgba(0,0,0,0.3);
+    }
+
+    .terrain-img {
+      background: #2e4136;
+      border-radius: 1.8rem 1.8rem 0.6rem 0.6rem;
+      overflow: hidden;
+      border: 1px solid #476354;
+      box-shadow: 0 12px 18px -8px #00000055;
+    }
+
+    .terrain-img img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+      filter: grayscale(0.3) contrast(1.1) brightness(0.9);
+      transition: 0.3s ease;
+    }
+
+    .terrain-img:hover img {
+      filter: grayscale(0.1) contrast(1.2) brightness(1);
+      transform: scale(1.01);
+    }
+
+    .feature-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.7rem;
+      margin: 1.5rem 0 0.8rem;
+    }
+
+    .feature-list li {
+      background: #1a281e;
+      border-radius: 60px;
+      padding: 0.55rem 0.4rem;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+      border: 1px solid #527160;
+      color: #d6cfbc;
+      box-shadow: inset 0 0 0 1px #8c8c5f22;
+    }
+
+    .cta-btn {
+      background: linear-gradient(145deg, #b1894b, #7e6236);
+      border: none;
+      color: #121a13;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.9rem 0;
+      border-radius: 60px;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: 0.25s;
+      border: 1px solid #d6b172;
+      box-shadow: 0 6px 0 #3f2f1c, 0 8px 20px #00000033;
+      margin-top: 0.4rem;
+    }
+
+    .cta-btn:hover {
+      background: #c69f62;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #3f2f1c, 0 12px 24px #00000055;
+    }
+
+    .elevation-badge {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin: 0.8rem 0.2rem 0.2rem;
+      color: #8b9f8b;
+      border-top: 1px dashed #467251;
+      padding-top: 0.6rem;
+    }
+
+    /* 响应式 · 移动端 */
+    @media (max-width: 780px) {
+      .mystic-farm { grid-template-columns: 1fr; }
+      .brand-panel { padding: 2rem 1.8rem; }
+      .brand-panel h1 { font-size: 2.6rem; }
+      .feature-list { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 0.8rem; }
+      .brand-panel h1 { font-size: 2.4rem; }
+      .brand-desc { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- index.html — 神秘农场品牌界面（结构） -->
+  <main class="mystic-farm">
+
+    <!-- 左：品牌精神 -->
+    <section class="brand-panel">
+      <h1>MYSTIC <em>FARM</em></h1>
+      <p class="brand-desc">
+        高山之上，薄雾与传说。<br>
+        始于1994，为极限攀登而生的神秘装备。<br>
+        每一根纤维都浸透旷野的呼吸。
+      </p>
+      <div class="motto">⛰️ ELEVATE YOUR RITUAL</div>
+    </section>
+
+    <!-- 右：视觉与互动 -->
+    <section class="mountain-visual">
+      <figure class="terrain-img">
+        <img src="https://picsum.photos/seed/mysticpeak/680/420" alt="神秘雪山岩壁" loading="lazy">
+      </figure>
+
+      <ul class="feature-list">
+        <li>野生羊毛</li>
+        <li>冰川绳扣</li>
+        <li>雪线帐篷</li>
+      </ul>
+
+      <button class="cta-btn" id="expeditionBtn" aria-label="加入远征队">📯 开启远征</button>
+
+      <div class="elevation-badge">
+        <span>海拔 4,200m</span>
+        <span>风向 NW · 19km/h</span>
+        <span id="trailStatus">📡 信号稳定</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // script.js — 神秘农场的轻交互
+    (function() {
+      const btn = document.getElementById('expeditionBtn');
+      const trailEl = document.getElementById('trailStatus');
+      let expeditions = 0;
+
+      // 动态反馈（远征状态）
+      btn.addEventListener('click', function() {
+        expeditions += 1;
+        const messages = [
+          '🧭 已进入迷雾荒原',
+          '🎒 补给已绑定',
+          '🪨 攀爬路径生成',
+          '✨ 山脊线清晰',
+          '🌒 夜行模式'
+        ];
+        const msg = messages[expeditions % messages.length];
+        trailEl.textContent = msg;
+
+        // 按钮微反馈
+        btn.style.transform = 'scale(0.97)';
+        setTimeout(() => btn.style.transform = '', 120);
+        // 状态闪烁效果
+        trailEl.style.color = '#e4c583';
+        setTimeout(() => trailEl.style.color = '', 300);
+      });
+
+      // 模拟海拔更新（响应式小细节）
+      setInterval(() => {
+        const randomAlt = (4200 + Math.floor(Math.random() * 80)) + 'm';
+        const elevSpan = document.querySelector('.elevation-badge span:first-child');
+        if (elevSpan) elevSpan.textContent = '海拔 ' + randomAlt;
+      }, 3200);
+    })();
+  </script>
+</body>
+</html>

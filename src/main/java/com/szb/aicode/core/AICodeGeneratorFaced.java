@@ -24,7 +24,7 @@ public class AICodeGeneratorFaced {
     @Resource
     private AiGeneratorCodeService aiGeneratorCodeService;
 
-    public File generatorAndSave(String userMessage,GeneratorTypeEnum type){
+    public File generatorAndSave(String userMessage,GeneratorTypeEnum type,Long appId){
 
         if(type==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"生成类型不能为空");
@@ -32,17 +32,17 @@ public class AICodeGeneratorFaced {
         return switch (type){
             case HTML -> {
                 GeneratorHtmlResp generatorHtmlResp = aiGeneratorCodeService.generatorHtmlCode(userMessage);
-                yield CodeFileSaveExecutor.codeSave(generatorHtmlResp,GeneratorTypeEnum.HTML);
+                yield CodeFileSaveExecutor.codeSave(generatorHtmlResp,GeneratorTypeEnum.HTML,appId);
             }
             case MULTI_FILE -> {
                 GeneratorMultiFileResp generatorMultiFileResp = aiGeneratorCodeService.generatorMultiFileCode(userMessage);
-                yield CodeFileSaveExecutor.codeSave(generatorMultiFileResp,GeneratorTypeEnum.MULTI_FILE);
+                yield CodeFileSaveExecutor.codeSave(generatorMultiFileResp,GeneratorTypeEnum.MULTI_FILE,appId);
             }
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR,"类型错误"+type.getValue());
         };
     }
 
-    public Flux<String> generatorAndSaveFluxStream(String userMessage,GeneratorTypeEnum type){
+    public Flux<String> generatorAndSaveFluxStream(String userMessage,GeneratorTypeEnum type,Long appId){
 
         if(type==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"生成类型不能为空");
@@ -50,25 +50,25 @@ public class AICodeGeneratorFaced {
         return switch (type){
             case HTML -> {
                 Flux<String> htmlCodeStream = aiGeneratorCodeService.generatorHtmlCodeStream(userMessage);
-                yield getStringFlux(htmlCodeStream,GeneratorTypeEnum.HTML);
+                yield getStringFlux(htmlCodeStream,GeneratorTypeEnum.HTML,appId);
             }
             case MULTI_FILE -> {
                 Flux<String> multiFileCodeStream = aiGeneratorCodeService.generatorMultiFileCodeStream(userMessage);
-                yield getStringFlux(multiFileCodeStream,GeneratorTypeEnum.MULTI_FILE);
+                yield getStringFlux(multiFileCodeStream,GeneratorTypeEnum.MULTI_FILE,appId);
             }
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR,"类型错误"+type.getValue());
         };
     }
 
 
-    private static Flux<String> getStringFlux(Flux<String> htmlCodeStream,GeneratorTypeEnum type) {
+    private static Flux<String> getStringFlux(Flux<String> htmlCodeStream,GeneratorTypeEnum type,Long appId) {
         StringBuilder htmlString = new StringBuilder();
         return htmlCodeStream.doOnNext(htmlString::append).
                 doOnComplete(() -> {
                     try {
                         String result = htmlString.toString();
                         Object o = CodeParserExecutor.codeParser(result, type);
-                        CodeFileSaveExecutor.codeSave(o,type);
+                        CodeFileSaveExecutor.codeSave(o,type,appId);
                         log.info("文件保存成功");
                     } catch (Exception e) {
                         log.error("文件保存失败：{}", e.getMessage());

@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class MysqlCodeGenerator {
 
-    private final static String TABLE_NAME = "app";
+    private final static String TABLE_NAME = "chat_history";
 
     public static void main(String[] args) {
 

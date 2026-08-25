@@ -2,6 +2,7 @@ package com.szb.aicode.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.szb.aicode.annotation.AuthCheck;
@@ -21,14 +22,21 @@ import com.szb.aicode.model.entity.User;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.model.vo.AppVo;
 import com.szb.aicode.service.UserService;
+import dev.langchain4j.internal.Json;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import com.szb.aicode.model.entity.App;
 import com.szb.aicode.service.AppService;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.szb.aicode.constant.UserConstant.USER_LOGIN_STATE;
@@ -48,6 +56,45 @@ public class AppController {
 
     @Resource
     private UserService userService;
+
+
+    @PostMapping("/deploy")
+    public BaseResponse<String> deploy(@RequestParam Long appId,HttpServletRequest request) {
+
+        ThrowUtils.throwIf(appId==null||appId<0,ErrorCode.NOT_FOUND_ERROR,"应用id错误");
+
+        User loginUser = userService.getLoginUser(request);
+
+        ThrowUtils.throwIf(loginUser==null,ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+
+        String deployDir = appService.deployCode(appId, loginUser);
+
+        return ResultUtils.success(deployDir);
+
+    }
+
+    @GetMapping(value = "/gene",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> gene(@RequestParam String message,
+                                           @RequestParam Long appId,
+                                           HttpServletRequest request) {
+        ThrowUtils.throwIf(message==null,ErrorCode.PARAMS_ERROR,"提示词不能为空");
+        ThrowUtils.throwIf(appId==null && appId<0,ErrorCode.PARAMS_ERROR,"应用id错误");
+        User loginUser = userService.getLoginUser(request);
+        Flux<String> stringFlux = appService.chatToGeneCode(message, appId, loginUser);
+        return stringFlux.map(chunk->{
+            Map<String,String> map =Map.of("d",chunk);
+            String jsonStr = JSONUtil.toJsonStr(map);
+            return ServerSentEvent.<String>builder().data(jsonStr).build();
+        })
+                .concatWith(Mono.just(
+                        // 发送结束事件
+                        ServerSentEvent.<String>builder()
+                                .event("done")
+                                .data("")
+                                .build()
+                ));
+
+    }
 
     @PostMapping("/add")
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {

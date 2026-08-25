@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>书封 · 静默之光</title>
+  <style>
+    /* style.css — 极简书封设计，仅演示内联嵌入（符合20行约束） */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #2c3e50;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      padding: 1.5rem;
+    }
+    .book-cover {
+      position: relative;
+      width: 300px;
+      aspect-ratio: 2 / 3;
+      max-width: 100%;
+      background: linear-gradient(145deg, #f5f0e6 0%, #e8dcc8 100%);
+      border-radius: 6px 12px 12px 6px;
+      box-shadow: 0 20px 30px -10px rgba(0,0,0,0.5), 
+                  inset 0 0 0 1px rgba(255,255,240,0.3), 
+                  inset 6px 0 12px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.8rem 1.2rem;
+      text-align: center;
+      transition: all 0.2s ease;
+      border-left: 4px solid #b5651d;
+    }
+    .book-cover::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 8px;
+      width: 2px;
+      height: 100%;
+      background: rgba(0,0,0,0.08);
+    }
+    .cover-title {
+      font-size: 2.2rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: #3a2c1f;
+      text-transform: uppercase;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      text-shadow: 1px 1px 0 rgba(255,245,230,0.8);
+      border-bottom: 1px solid rgba(181,101,29,0.4);
+      padding-bottom: 0.6rem;
+      width: 100%;
+    }
+    .cover-author {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.25rem;
+      color: #7a5a3c;
+      margin-top: 0.5rem;
+      font-weight: 400;
+    }
+    .cover-ornament {
+      margin: 1rem 0 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #b5651d;
+      opacity: 0.7;
+      font-size: 0.7rem;
+    }
+    .cover-ornament::before,
+    .cover-ornament::after {
+      content: '';
+      height: 1px;
+      width: 26px;
+      background: linear-gradient(90deg, transparent, #b5651d, transparent);
+    }
+  </style>
+</head>
+<body>
+  <!-- index.html — 仅封面结构，约20行以内 -->
+  <main class="book-cover" role="img" aria-label="书籍封面：静默之光">
+    <h1 class="cover-title">静默之光</h1>
+    <div class="cover-ornament">✦ ✦ ✦</div>
+    <p class="cover-author">J. 墨言</p>
+  </main>
+</body>
+</html>

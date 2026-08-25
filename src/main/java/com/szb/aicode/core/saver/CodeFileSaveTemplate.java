@@ -2,6 +2,7 @@ package com.szb.aicode.core.saver;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
+import com.szb.aicode.constant.AppConstant;
 import com.szb.aicode.exception.BusinessException;
 import com.szb.aicode.exception.ErrorCode;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
@@ -11,13 +12,13 @@ import java.nio.charset.StandardCharsets;
 
 public abstract class CodeFileSaveTemplate<T> {
 
-    private static final String SAVE_ROOT_PATH_DIR=System.getProperty("user.dir")+"/tmp/code_output";
+    private static final String SAVE_ROOT_PATH_DIR= AppConstant.CODE_OUTPUT_ROOT_DIR;
 
-    public final File fileSave(T result) {
+    public final File fileSave(T result,Long appId) {
 
         validateInput(result);
 
-        String path = getUniqueDir();
+        String path = getUniqueDir(appId);
 
         saveFile(result,path);
 
@@ -35,11 +36,11 @@ public abstract class CodeFileSaveTemplate<T> {
 
     }
 
-    private String getUniqueDir(){
+    private String getUniqueDir(Long appId) {
 
         String dizType=getCodeType().getValue();
 
-        String string = SAVE_ROOT_PATH_DIR + "/" + dizType + "_" + IdUtil.getSnowflakeNextIdStr();
+        String string = SAVE_ROOT_PATH_DIR + "/" + dizType + "_" + appId;
 
         FileUtil.mkdir(string);
 

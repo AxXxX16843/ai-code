@@ -1,0 +1,58 @@
+/* 全局视觉风格 */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(180deg, #d3ecff 0%, #ffffff 75%);
+  color: rgba(0, 0, 0, 0.85);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 按钮统一圆角 */
+.ant-btn {
+  border-radius: 8px;
+}
+
+/* 输入类组件统一圆角 */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-input-number-group-wrapper {
+  border-radius: 8px;
+}
+
+/* 卡片统一圆角 */
+.ant-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 通用内容容器卡片 */
+.content-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 页面通用过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招聘启事 · 前端专家</title>
+    <!-- style.css 已内联于head中（保持文件分离结构，但为单文件演示而内嵌） -->
+    <style>
+        /* style.css —— 招聘广告样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .job-card {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        }
+
+        .job-card:hover {
+            transform: scale(1.005);
+        }
+
+        /* hero 区 */
+        .hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            padding: 2rem 2rem 1.8rem;
+            color: white;
+            text-align: center;
+            border-bottom: 6px solid #f59e0b;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.25rem;
+            word-break: break-word;
+        }
+
+        .hero .subhead {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 0.75rem;
+            margin-top: 0.7rem;
+            display: inline-block;
+        }
+
+        /* 核心内容 flex 布局 */
+        .content-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .job-info {
+            flex: 1 1 220px;
+        }
+
+        .job-details {
+            flex: 2 1 380px;
+        }
+
+        /* 配置卡片 */
+        .info-item {
+            background: #f1f5f9;
+            padding: 0.8rem 1.2rem;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            border-left: 6px solid #3b82f6;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .info-item span {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .info-item strong {
+            font-size: 1.2rem;
+        }
+
+        /* 描述区域 */
+        .job-details h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .job-details p {
+            margin-bottom: 1.2rem;
+            color: #334155;
+        }
+
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin: 1.2rem 0;
+        }
+
+        .skill-tag {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 0.3rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            border: 1px solid #a5b4fc;
+        }
+
+        .btn-apply {
+            background: #f59e0b;
+            border: none;
+            padding: 0.9rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 60px;
+            color: #0f172a;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
+            margin: 1rem 0 0.5rem;
+            width: fit-content;
+            display: inline-block;
+            border: 2px solid transparent;
+        }
+
+        .btn-apply:hover {
+            background: #fbbf24;
+            box-shadow: 0 10px 24px rgba(245, 158, 11, 0.45);
+            transform: translateY(-3px);
+        }
+
+        .btn-apply:active {
+            transform: translateY(0);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .hidden-note {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #1e293b;
+            background: #ecfdf5;
+            padding: 0.8rem 1rem;
+            border-radius: 0.8rem;
+            border: 1px dashed #10b981;
+            display: none;
+        }
+        .hidden-note.show {
+            display: block;
+        }
+
+        /* 响应式 */
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .hero h1 { font-size: 2rem; }
+            .content-grid { flex-direction: column; gap: 1.2rem; padding: 1.5rem;}
+            .job-details h2 { font-size: 1.4rem; }
+        }
+
+        /* 微交互 */
+        footer {
+            background: #f1f5f9;
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #475569;
+            border-top: 1px solid #e2e8f0;
+        }
+        footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- index.html 结构（不含script，独立结构） -->
+    <main class="job-card">
+        <!-- hero 区域 -->
+        <section class="hero">
+            <h1>🚀 加入我们 · 前端专家</h1>
+            <div class="subhead">远程 · 全职 · 高影响力团队</div>
+        </section>
+
+        <!-- Flex 双列内容 -->
+        <div class="content-grid">
+            <!-- 左侧 快速信息 -->
+            <aside class="job-info">
+                <div class="info-item">
+                    <span>📍 地点</span>
+                    <strong>远程 (全球)</strong>
+                </div>
+                <div class="info-item">
+                    <span>💼 经验</span>
+                    <strong>5+ 年</strong>
+                </div>
+                <div class="info-item">
+                    <span>💰 薪资</span>
+                    <strong>$90k – $120k</strong>
+                </div>
+                <div class="info-item">
+                    <span>⏰ 类型</span>
+                    <strong>全职</strong>
+                </div>
+            </aside>
+
+            <!-- 右侧 详细说明 -->
+            <section class="job-details">
+                <h2>你将会做什么</h2>
+                <p>
+                    构建下一代数据可视化面板，深入现代前端架构。与产品、设计团队紧密协作，优化交互性能，塑造设计系统。你将拥有自主权，并直接影响技术路线图。
+                </p>
+                <h2>我们寻找的人</h2>
+                <p>
+                    对细节有强迫症，精通原生 JS、CSS 和语义化 HTML。你熟悉响应式设计，并乐于解决跨浏览器挑战。拥有组件思维，能从零搭建可维护的代码。
+                </p>
+                <!-- 技能标签（flex 展示） -->
+                <div class="skill-tags">
+                    <span class="skill-tag">JavaScript (ES6+)</span>
+                    <span class="skill-tag">CSS Flexbox/Grid</span>
+                    <span class="skill-tag">React/Vue/原生</span>
+                    <span class="skill-tag">Web性能优化</span>
+                    <span class="skill-tag">TypeScript</span>
+                </div>
+                <!-- 交互按钮 + 提示信息 -->
+                <button class="btn-apply" id="applyBtn">立即申请 ✨</button>
+                <div id="applyMessage" class="hidden-note">
+                    ✅ 谢谢申请！招聘团队将在2个工作日内联系您。
+                </div>
+                <p style="margin-top: 1.2rem; font-size: 0.95rem; color: #475569;">
+                    使用现代技术解决复杂问题 · 拥有学习和成长预算
+                </p>
+            </section>
+        </div>
+
+        <!-- 底部占位 -->
+        <footer>
+            📩 或者发邮件至 <a href="#">careers@company.io</a> · 我们期待你的声音
+        </footer>
+    </main>
+
+    <!-- script.js 交互逻辑（分离但内联于单文件中） -->
+    <script>
+        // 功能：点击"立即申请"显示确认消息，并且改变按钮状态
+        (function() {
+            const btn = document.getElementById('applyBtn');
+            const msg = document.getElementById('applyMessage');
+            
+            if (btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault(); // 防止任何可能的默认行为
+                    if (msg) {
+                        // 添加显示类
+                        msg.classList.add('show');
+                        // 改变按钮样式增强反馈
+                        btn.textContent = '✓ 已提交';
+                        btn.style.background = '#10b981';
+                        btn.style.color = 'white';
+                        btn.style.borderColor = '#059669';
+                        btn.disabled = true;  // 避免重复点击
+                        // 同时更新一条额外的隐藏状态（可选）
+                    }
+                    
+                    // 增加一条控制台信息（不影响体验）
+                    console.log('招聘申请被点击 (模拟交互)');
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

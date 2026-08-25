@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>· 悦食 · 现代餐厅广告</title>
+  <!-- 样式表引入 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 主容器 (语义化结构) -->
+  <header class="hero" id="home">
+    <nav class="navbar" aria-label="主导航">
+      <div class="brand">
+        <span class="brand-accent">悦</span>食 · YUE
+      </div>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#home">首页</a></li>
+        <li><a href="#menu">品味</a></li>
+        <li><a href="#about">故事</a></li>
+        <li><a href="#testimonials">食客</a></li>
+        <li><a href="#reservation" class="btn-nav">订座</a></li>
+      </ul>
+      <button class="menu-toggle" id="menu-toggle" aria-label="菜单" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <div class="hero-content">
+      <h1>在<span class="highlight">悦食</span>，每一口都是时光</h1>
+      <p>本地食材 · 匠心烹饪 · 现代融合</p>
+      <a href="#reservation" class="btn-primary">预订席位</a>
+    </div>
+  </header>
+
+  <!-- 招牌菜品展示 (菜单预览) -->
+  <section class="section" id="menu">
+    <div class="section-title">
+      <h2>招牌 · 味觉之旅</h2>
+      <span class="subtitle">主厨推荐，季节限定</span>
+    </div>
+    <div class="menu-grid">
+      <article class="menu-card">
+        <img src="https://picsum.photos/400/300?random=1" alt="炙烤三文鱼配青豆泥" loading="lazy">
+        <h3>炙烤三文鱼 · 青豆泥</h3>
+        <p>炭火烤制，脆皮多汁，搭配薄荷青豆泥与柠檬泡沫</p>
+        <span class="price">¥128</span>
+      </article>
+      <article class="menu-card">
+        <img src="https://picsum.photos/400/300?random=2" alt="松露野菌烩饭" loading="lazy">
+        <h3>松露野菌烩饭</h3>
+        <p>意大利米粒吸饱牛肝菌高汤，刨片黑松露</p>
+        <span class="price">¥98</span>
+      </article>
+      <article class="menu-card">
+        <img src="https://picsum.photos/400/300?random=3" alt="慢炖和牛短肋" loading="lazy">
+        <h3>慢炖和牛短肋</h3>
+        <p>低温炖煮12小时，红酒酱汁，入口即化</p>
+        <span class="price">¥268</span>
+      </article>
+    </div>
+    <div class="center-btn">
+      <a href="#reservation" class="btn-outline">查看完整菜单</a>
+    </div>
+  </section>
+
+  <!-- 关于/餐厅理念 -->
+  <section class="split-section" id="about">
+    <div class="split-image">
+      <img src="https://picsum.photos/600/500?random=4" alt="餐厅内部空间" loading="lazy">
+    </div>
+    <div class="split-content">
+      <h2>我们相信，食物是情感的载体</h2>
+      <p>始于2020年，悦食是一家融合东方美学与法式烹饪技艺的现代小馆。我们从本地农场直采时令食材，配合开放式厨房，让每一道菜都充满温度。</p>
+      <p>「悦」者，静心品味，与友共食。 我们提供自然酒与无酒精调饮，打造轻松静雅的用餐氛围。</p>
+      <blockquote>—— 主厨 · 林泽</blockquote>
+    </div>
+  </section>
+
+  <!-- 顾客评价 (社交证明) -->
+  <section class="section testimonials" id="testimonials">
+    <div class="section-title">
+      <h2>食客说</h2>
+      <span class="subtitle">真实声音，美味见证</span>
+    </div>
+    <div class="testimonial-grid">
+      <div class="review-card">
+        <span class="stars">★★★★★</span>
+        <p>“烤三文鱼的皮脆得像玻璃，但鱼肉依然嫩滑，难以置信。搭配的青豆泥太清新了。”</p>
+        <div class="reviewer">Sofia · 美食博主</div>
+      </div>
+      <div class="review-card">
+        <span class="stars">★★★★☆</span>
+        <p>“和牛短肋一抿就化，红酒酱浓郁优雅。环境很适合约会，服务也恰到好处。”</p>
+        <div class="reviewer">James · 常客</div>
+      </div>
+      <div class="review-card">
+        <span class="stars">★★★★★</span>
+        <p>“从面包篮到甜品，每一处细节都用心。松露烩饭是我在城里吃过最好的一碗。”</p>
+        <div class="reviewer">Lena · 美食家</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 预订表单 (交互区域) -->
+  <section class="section reservation" id="reservation">
+    <div class="form-container">
+      <h2>预订您的专属时刻</h2>
+      <p>我们提供午餐、晚餐以及包间，请留下您的信息，我们将尽快确认。</p>
+      <form id="res-form">
+        <div class="form-row">
+          <input type="text" id="name" placeholder="您的姓名" required>
+          <input type="tel" id="phone" placeholder="手机号码" required>
+        </div>
+        <div class="form-row">
+          <input type="date" id="date" aria-label="预订日期" required>
+          <select id="guests" required>
+            <option value="" disabled selected>就餐人数</option>
+            <option value="1">1位</option>
+            <option value="2">2位</option>
+            <option value="3-4">3-4位</option>
+            <option value="5+">5位以上</option>
+          </select>
+        </div>
+        <label class="checkbox-label">
+          <input type="checkbox" id="agree" required> 同意接收预订确认短信
+        </label>
+        <button type="submit" class="btn-primary full-width" id="submit-btn">确认预订</button>
+        <p id="form-message" class="form-message" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p class="brand">悦食 · YUE</p>
+      <p>杭州 · 西湖区 · 莫干山路 1128 号</p>
+      <p>电话：0571-8888-6666（预约时间 10:00-22:00）</p>
+      <p class="copyright">© 悦食餐厅  ·  本站仅作展示</p>
+    </div>
+  </footer>
+
+  <!-- 引入JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>

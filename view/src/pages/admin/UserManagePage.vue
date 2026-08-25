@@ -128,6 +128,13 @@ const doDelete = async (id) => {
 </script>
 
 <style scoped>
+#userManagePage {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
 :deep(.ant-table-pagination) {
   justify-content: center;
 }
