@@ -112,7 +112,7 @@ export async function register(body: API.RegisterRequest, options?: { [key: stri
 }
 
 /** 此处后端没有提供注释 POST /user/update */
-export async function update(body: API.UserUpdateRequest, options?: { [key: string]: any }) {
+export async function update1(body: API.UserUpdateRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/user/update', {
     method: 'POST',
     headers: {

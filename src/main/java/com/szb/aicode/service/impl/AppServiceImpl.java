@@ -9,6 +9,8 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.szb.aicode.constant.AppConstant;
 import com.szb.aicode.core.AICodeGeneratorFaced;
+import com.szb.aicode.core.builder.VueProjectBuilder;
+import com.szb.aicode.core.handle.StreamHandleExecutor;
 import com.szb.aicode.exception.BusinessException;
 import com.szb.aicode.exception.ErrorCode;
 import com.szb.aicode.exception.ThrowUtils;
@@ -56,6 +58,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     @Resource
     private ChatHistoryService chatHistoryService;
 
+    @Resource
+    private StreamHandleExecutor streamHandleExecutor;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
+
+
     @Override
     public boolean removeById(Serializable id) {
 
@@ -96,23 +105,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 ChatHistoryMessageTypeEnum.USER.getValue(),appId);
 
         Flux<String> stream = aiCodeGeneratorFaced.generatorAndSaveFluxStream(message, byValue, appId);
-        StringBuilder stringBuilder = new StringBuilder();
-        return stream.
-                map(chunk->{
-                    stringBuilder.append(chunk);
-                    return chunk;
-                })
-                .doOnComplete(()->{
-                    String aiMessage= stringBuilder.toString();
-                    if (StrUtil.isNotBlank(aiMessage)) {
-                        chatHistoryService.addChatHistory(loginUser,aiMessage,ChatHistoryMessageTypeEnum.AI.getValue(),appId);
-                    }
-                })
-                .doOnError(error -> {
-            // 如果AI回复失败，也要记录错误消息
-            String errorMessage = "AI回复失败: " + error.getMessage();
-            chatHistoryService.addChatHistory(loginUser, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), appId);
-        });
+        return streamHandleExecutor.handle(loginUser,stream,appId,chatHistoryService,byValue);
     }
 
     @Override
@@ -126,6 +119,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if(app==null){
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"应用不存在请先创建");
         }
+
         String deployKey = app.getDeployKey();
         if(deployKey==null){
             deployKey = RandomUtil.randomString(6);
@@ -135,6 +129,22 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         String dirName=codeGenType+"_"+appId;
         String dirPath= AppConstant.CODE_OUTPUT_ROOT_DIR+ File.separator+dirName;
         File resource = new File(dirPath);
+        if (!resource.exists() || !resource.isDirectory()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
+        }
+
+        GeneratorTypeEnum byValue = GeneratorTypeEnum.getByValue(codeGenType);
+        if(byValue.getValue().equals("vue_project")){
+            boolean buildSuccess = vueProjectBuilder.buildProject(dirPath);
+            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，请检查代码和依赖");
+            // 检查 dist 目录是否存在
+            File distDir = new File(dirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
+            // 将 dist 目录作为部署源
+            resource = distDir;
+            log.info("Vue 项目构建成功，将部署 dist 目录: {}", distDir.getAbsolutePath());
+
+        }
         String deployDir=AppConstant.CODE_DEPLOY_ROOT_DIR+File.separator+deployKey;
         File deploy = new File(deployDir);
         try {

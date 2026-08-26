@@ -37,6 +37,11 @@
                 v-html="renderMarkdown(msg.content)"
               ></div>
               <div v-else-if="msg.role === 'ai'" class="loading-text">AI 思考中...</div>
+              <div v-else-if="msg.role === 'tool'" class="tool-message">
+                <a-spin v-if="msg.status === 'loading'" size="small" />
+                <CheckCircleOutlined v-else class="tool-success-icon" />
+                <span>{{ msg.content }}</span>
+              </div>
               <div v-else class="user-text">{{ msg.content }}</div>
             </div>
           </div>
@@ -74,6 +79,11 @@
           </div>
           <p class="generating-text">AI 正在努力生成中...</p>
         </div>
+        <!-- 构建中（Vue 项目） -->
+        <div v-else-if="previewState === 'building'" class="building-hint">
+          <a-spin />
+          <p>正在构建项目（安装依赖 + 打包）...</p>
+        </div>
         <!-- 渲染中 -->
         <div v-else-if="previewState === 'rendering'" class="rendering-hint">
           <a-spin />
@@ -107,9 +117,10 @@ import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 import AppLogo from '@/components/AppLogo.vue'
+import { CheckCircleOutlined } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import { getAppVoById, deploy } from '@/api/appController'
-import { getChatHistoryPage } from '@/api/chatHistory'
+import { get as getChatHistoryPage } from '@/api/chatHistoryController'
 import { API_BASE_URL, getStaticPreviewUrl, getDeployUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 
@@ -160,7 +171,7 @@ const fetchAppInfo = async () => {
 // 游标分页加载对话历史
 const loadHistory = async () => {
   loadingHistory.value = true
-  const res = await getChatHistoryPage(appId.value, cursorTime.value, 10)
+  const res = await getChatHistoryPage({ appId: appId.value, lastTime: cursorTime.value, pageSize: 10 })
   loadingHistory.value = false
   if (res.data.code === 0 && res.data.data) {
     const records = res.data.data.records || []
@@ -183,7 +194,12 @@ const loadHistory = async () => {
 // 更新预览地址
 const updatePreview = () => {
   if (app.value.codeGenType && app.value.id) {
-    previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, app.value.id)
+    if (app.value.codeGenType === 'vue_project' && !app.value.deployKey) {
+      // Vue 项目未部署（尚未构建 dist），无法预览
+      previewUrl.value = ''
+    } else {
+      previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, app.value.id)
+    }
   }
 }
 
@@ -202,6 +218,45 @@ const handleError = (error, aiMessageIndex) => {
   previewState.value = 'idle'
   message.error('生成失败，请重试')
   isGenerating.value = false
+}
+
+// 生成完成后的处理：Vue 项目是异步构建，轮询预览直到 dist 就绪
+const handleGenerationDone = async () => {
+  await fetchAppInfo()
+  if (app.value.codeGenType === 'vue_project') {
+    previewState.value = 'building'
+    startPollingPreview()
+  } else {
+    updatePreview()
+    previewState.value = 'ready'
+  }
+}
+
+// 轮询静态预览，直到构建产物可访问
+const startPollingPreview = () => {
+  const url = getStaticPreviewUrl(app.value.codeGenType, app.value.id)
+  let retries = 0
+  const maxRetries = 90
+  const poll = async () => {
+    if (retries >= maxRetries) {
+      previewState.value = 'idle'
+      message.error('项目构建超时，请查看后端日志')
+      return
+    }
+    try {
+      const res = await fetch(url, { method: 'HEAD' })
+      if (res.ok) {
+        previewUrl.value = url + '?t=' + Date.now()
+        previewState.value = 'ready'
+        return
+      }
+    } catch (e) {
+      // 网络异常，继续轮询
+    }
+    retries++
+    setTimeout(poll, 5000)
+  }
+  poll()
 }
 
 // SSE 流式生成代码
@@ -225,13 +280,52 @@ const generateCode = async (userMessage, aiMessageIndex) => {
       if (streamCompleted) return
       try {
         const parsed = JSON.parse(event.data)
-        const content = parsed.d
-        if (content !== undefined && content !== null) {
-          fullContent += content
-          messages.value[aiMessageIndex].content = fullContent
-          messages.value[aiMessageIndex].loading = false
-          scrollToBottom()
+        // 尝试解析内层类型化消息（VUE_PROJECT：{"type":"...","data":"..."}）
+        let inner = null
+        try {
+          const obj = JSON.parse(parsed.d)
+          if (obj && typeof obj === 'object' && obj.type) {
+            inner = obj
+          }
+        } catch (e) {
+          inner = null
         }
+
+        if (inner) {
+          // 类型化消息：tool_request / tool_executed / ai_response
+          if (inner.type === 'tool_request') {
+            messages.value.push({
+              role: 'tool',
+              status: 'loading',
+              content: `正在执行工具「${inner.name || '工具'}」...`,
+            })
+          } else if (inner.type === 'tool_executed') {
+            // 把最后一条 loading 的 tool 消息更新为成功
+            for (let i = messages.value.length - 1; i >= 0; i--) {
+              if (messages.value[i].role === 'tool' && messages.value[i].status === 'loading') {
+                messages.value[i].status = 'success'
+                messages.value[i].content = '工具执行成功'
+                break
+              }
+            }
+          } else if (inner.type === 'ai_response') {
+            const content = inner.data
+            if (content !== undefined && content !== null) {
+              fullContent += content
+              messages.value[aiMessageIndex].content = fullContent
+              messages.value[aiMessageIndex].loading = false
+            }
+          }
+        } else {
+          // HTML/MULTI_FILE：parsed.d 是原始代码片段
+          const content = parsed.d
+          if (content !== undefined && content !== null) {
+            fullContent += content
+            messages.value[aiMessageIndex].content = fullContent
+            messages.value[aiMessageIndex].loading = false
+          }
+        }
+        scrollToBottom()
       } catch (error) {
         console.error('解析消息失败:', error)
         handleError(error, aiMessageIndex)
@@ -244,13 +338,7 @@ const generateCode = async (userMessage, aiMessageIndex) => {
       isGenerating.value = false
       eventSource?.close()
       inputValue.value = ''
-      // 延迟更新预览，确保后端已完成处理
-      setTimeout(async () => {
-        previewState.value = 'rendering'
-        await fetchAppInfo()
-        updatePreview()
-        previewState.value = 'ready'
-      }, 800)
+      handleGenerationDone()
     })
 
     eventSource.onerror = function () {
@@ -259,12 +347,7 @@ const generateCode = async (userMessage, aiMessageIndex) => {
         streamCompleted = true
         isGenerating.value = false
         eventSource?.close()
-        setTimeout(async () => {
-          previewState.value = 'rendering'
-          await fetchAppInfo()
-          updatePreview()
-          previewState.value = 'ready'
-        }, 800)
+        handleGenerationDone()
       } else {
         handleError(new Error('SSE连接错误'), aiMessageIndex)
       }
@@ -301,6 +384,9 @@ const handleDeploy = async () => {
   if (res.data.code === 0) {
     message.success('部署成功')
     await fetchAppInfo()
+    // 部署后强制刷新预览（Vue 项目 dist 已构建）
+    previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, app.value.id) + '?t=' + Date.now()
+    previewState.value = 'ready'
     // 部署成功后打开部署地址（新页面）
     if (app.value.deployKey) {
       window.open(getDeployUrl(app.value.deployKey), '_blank')
@@ -471,6 +557,15 @@ onMounted(async () => {
   color: rgba(0, 0, 0, 0.45);
 }
 
+.building-hint {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
 .message-list {
   flex: 1;
   overflow-y: auto;
@@ -535,6 +630,18 @@ onMounted(async () => {
 
 .loading-text {
   color: rgba(0, 0, 0, 0.45);
+}
+
+.tool-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+}
+
+.tool-success-icon {
+  color: #52c41a;
 }
 
 .chat-input-area {

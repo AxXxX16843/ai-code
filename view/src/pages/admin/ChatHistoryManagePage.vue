@@ -40,7 +40,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { listChatHistoryByPage, removeChatHistory } from '@/api/chatHistory'
+import { listAllChatHistoryByPageForAdmin, remove } from '@/api/chatHistoryController'
 
 const columns = [
   { title: 'id', dataIndex: 'id', width: 120 },
@@ -64,7 +64,7 @@ const searchParams = reactive({
 
 const fetchData = async () => {
   loading.value = true
-  const res = await listChatHistoryByPage({ ...searchParams })
+  const res = await listAllChatHistoryByPageForAdmin({ ...searchParams })
   loading.value = false
   if (res.data.data) {
     data.value = res.data.data.records ?? []
@@ -99,7 +99,7 @@ const doSearch = () => {
 
 // 删除
 const doDelete = async (record) => {
-  const res = await removeChatHistory(record.id)
+  const res = await remove({ id: record.id })
   if (res.data === true) {
     message.success('删除成功')
     fetchData()

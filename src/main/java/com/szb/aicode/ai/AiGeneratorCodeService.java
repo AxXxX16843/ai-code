@@ -5,6 +5,7 @@ import com.szb.aicode.ai.model.GeneratorHtmlResp;
 import com.szb.aicode.ai.model.GeneratorMultiFileResp;
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
@@ -25,7 +26,7 @@ public interface AiGeneratorCodeService {
     Flux<String> generatorMultiFileCodeStream(String userMessage);
 
    @SystemMessage(fromResource = "prompt/codegen-vue-project-system-prompt.txt")
-    Flux<String> generatorVueProjectCodeStream(@MemoryId Long appId,@UserMessage String userMessage);
+   TokenStream generatorVueProjectCodeStream(@MemoryId Long appId, @UserMessage String userMessage);
 
 
 }

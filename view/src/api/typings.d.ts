@@ -69,6 +69,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageChatHistory = {
+    code?: number
+    data?: PageChatHistory
+    message?: string
+  }
+
   type BaseResponsePageUserVo = {
     code?: number
     data?: PageUserVo
@@ -99,6 +105,30 @@ declare namespace API {
     message?: string
   }
 
+  type ChatHistory = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
+  type ChatHistoryQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    lastCreateTime?: string
+  }
+
   type DeleteRequest = {
     id?: number
   }
@@ -120,6 +150,16 @@ declare namespace API {
     id: number
   }
 
+  type getInfoParams = {
+    id: number
+  }
+
+  type getParams = {
+    appId: number
+    lastTime?: string
+    pageSize?: number
+  }
+
   type getUserParams = {
     id: number
   }
@@ -137,6 +177,19 @@ declare namespace API {
     optimizeCountQuery?: boolean
   }
 
+  type PageChatHistory = {
+    records?: ChatHistory[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type pageParams = {
+    page: PageChatHistory
+  }
+
   type PageUserVo = {
     records?: UserVo[]
     pageNumber?: number
@@ -150,6 +203,10 @@ declare namespace API {
     username?: string
     password?: string
     check?: string
+  }
+
+  type removeParams = {
+    id: number
   }
 
   type ServerSentEventString = true

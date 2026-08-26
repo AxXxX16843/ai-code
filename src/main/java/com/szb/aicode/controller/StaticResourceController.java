@@ -46,8 +46,16 @@ public class StaticResourceController {
             if (resourcePath.equals("/")) {
                 resourcePath = "/index.html";
             }
+            // 基础目录：Vue 项目优先使用构建产物 dist
+            String baseDir = PREVIEW_ROOT_DIR + "/" + deployKey;
+            if (deployKey.startsWith("vue_project_")) {
+                File dist = new File(baseDir, "dist");
+                if (dist.exists() && dist.isDirectory()) {
+                    baseDir = dist.getAbsolutePath();
+                }
+            }
             // 构建文件路径
-            String filePath = PREVIEW_ROOT_DIR + "/" + deployKey + resourcePath;
+            String filePath = baseDir + resourcePath;
             File file = new File(filePath);
             // 检查文件是否存在
             if (!file.exists()) {
