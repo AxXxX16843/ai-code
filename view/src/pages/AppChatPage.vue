@@ -14,6 +14,11 @@
     <div class="chat-body">
       <div class="chat-left">
         <div class="message-list" ref="messageListRef">
+          <div v-if="hasMore" class="load-more-wrap">
+            <a-button size="small" :loading="loadingHistory" @click="loadHistory">
+              加载更多
+            </a-button>
+          </div>
           <div v-for="(msg, index) in messages" :key="index" :class="['message-item', msg.role]">
             <a-avatar
               :class="'message-avatar-' + msg.role"
@@ -104,6 +109,7 @@ import 'highlight.js/styles/github.css'
 import AppLogo from '@/components/AppLogo.vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import { getAppVoById, deploy } from '@/api/appController'
+import { getChatHistoryPage } from '@/api/chatHistory'
 import { API_BASE_URL, getStaticPreviewUrl, getDeployUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 
@@ -130,6 +136,9 @@ const deploying = ref(false)
 const showDetail = ref(false)
 const previewUrl = ref('')
 const previewState = ref('idle') // idle | generating | rendering | ready
+const hasMore = ref(false)
+const loadingHistory = ref(false)
+const cursorTime = ref(null)
 const messageListRef = ref(null)
 
 const aiAvatar = '' // 可替换为 assets/aiAvatar.png
@@ -145,6 +154,29 @@ const fetchAppInfo = async () => {
   const res = await getAppVoById({ id: appId.value })
   if (res.data.code === 0 && res.data.data) {
     app.value = res.data.data
+  }
+}
+
+// 游标分页加载对话历史
+const loadHistory = async () => {
+  loadingHistory.value = true
+  const res = await getChatHistoryPage(appId.value, cursorTime.value, 10)
+  loadingHistory.value = false
+  if (res.data.code === 0 && res.data.data) {
+    const records = res.data.data.records || []
+    const newMessages = records.map((r) => ({
+      role: r.messageType === 'user' ? 'user' : 'ai',
+      content: r.message,
+      createTime: r.createTime,
+    }))
+    // 后端按时间降序返回，反转成升序（最早在前）后拼接到列表前面
+    messages.value = [...newMessages.reverse(), ...messages.value]
+    if (records.length > 0) {
+      cursorTime.value = records[records.length - 1].createTime
+    }
+    hasMore.value = records.length >= 10
+  } else {
+    hasMore.value = false
   }
 }
 
@@ -211,6 +243,7 @@ const generateCode = async (userMessage, aiMessageIndex) => {
       streamCompleted = true
       isGenerating.value = false
       eventSource?.close()
+      inputValue.value = ''
       // 延迟更新预览，确保后端已完成处理
       setTimeout(async () => {
         previewState.value = 'rendering'
@@ -295,10 +328,17 @@ onMounted(async () => {
     await loginUserStore.fetchLoginUser()
   }
   await fetchAppInfo()
-  updatePreview()
+  await loadHistory()
 
-  // 无 view=1 参数时，自动发送应用的初始 prompt（仅本人）
-  if (!route.query.view && canChat.value && app.value.initPrompt) {
+  // 如果有至少 2 条对话记录，展示已生成的网站
+  if (messages.value.length >= 2) {
+    updatePreview()
+    previewState.value = 'ready'
+  }
+
+  // 自己的 app 且没有对话历史，才自动发送初始 prompt
+  if (canChat.value && messages.value.length === 0 && app.value.initPrompt) {
+    inputValue.value = ''
     messages.value.push({ role: 'user', content: app.value.initPrompt })
     const aiMessageIndex = messages.value.length
     messages.value.push({ role: 'ai', content: '', loading: true })
@@ -438,6 +478,12 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 4px;
 }
 
 .message-item {

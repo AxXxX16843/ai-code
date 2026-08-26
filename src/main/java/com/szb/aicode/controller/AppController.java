@@ -21,6 +21,7 @@ import com.szb.aicode.model.dto.app.AppUpdateRequest;
 import com.szb.aicode.model.entity.User;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.model.vo.AppVo;
+import com.szb.aicode.service.ChatHistoryService;
 import com.szb.aicode.service.UserService;
 import dev.langchain4j.internal.Json;
 import jakarta.annotation.Resource;
@@ -157,6 +158,7 @@ public class AppController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = appService.removeById(id);
+
         return ResultUtils.success(result);
     }
 

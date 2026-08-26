@@ -1,17 +1,25 @@
 package com.szb.aicode.controller;
 
 import com.mybatisflex.core.paginate.Page;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.szb.aicode.annotation.AuthCheck;
+import com.szb.aicode.common.BaseResponse;
+import com.szb.aicode.common.ResultUtils;
+import com.szb.aicode.constant.UserConstant;
+import com.szb.aicode.exception.BusinessException;
+import com.szb.aicode.exception.ErrorCode;
+import com.szb.aicode.exception.ThrowUtils;
+import com.szb.aicode.model.dto.chathistory.ChatHistoryQueryRequest;
+import com.szb.aicode.model.entity.User;
+import com.szb.aicode.service.UserService;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.szb.aicode.model.entity.ChatHistory;
 import com.szb.aicode.service.ChatHistoryService;
-import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -24,8 +32,11 @@ import java.util.List;
 @RequestMapping("/chatHistory")
 public class ChatHistoryController {
 
-    @Autowired
+    @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private UserService userService;
 
     /**
      * 保存对话历史。
@@ -37,6 +48,34 @@ public class ChatHistoryController {
     public boolean save(@RequestBody ChatHistory chatHistory) {
         return chatHistoryService.save(chatHistory);
     }
+
+
+    @GetMapping("/getPage/{appId}")
+    public BaseResponse<Page<ChatHistory>> get(@PathVariable("appId") Long appId,
+                                               HttpServletRequest request,
+                                               @RequestParam(required = false) LocalDateTime lastTime,
+                                               @RequestParam(defaultValue = "10") int pageSize) {
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        Page<ChatHistory> chatHistory = chatHistoryService.getChatHistory(loginUser, appId, lastTime, pageSize);
+
+        return BaseResponse.success(chatHistory);
+
+    }
+    @PostMapping("/admin/getPage")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<ChatHistory>> listAllChatHistoryByPageForAdmin(@RequestBody ChatHistoryQueryRequest chatHistoryQueryRequest) {
+        ThrowUtils.throwIf(chatHistoryQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        long pageNum = chatHistoryQueryRequest.getPageNum();
+        long pageSize = chatHistoryQueryRequest.getPageSize();
+        // 查询数据
+        QueryWrapper queryWrapper = chatHistoryService.getQueryWrapper(chatHistoryQueryRequest);
+        Page<ChatHistory> result = chatHistoryService.page(Page.of(pageNum, pageSize), queryWrapper);
+        return ResultUtils.success(result);
+    }
+
 
     /**
      * 根据主键删除对话历史。

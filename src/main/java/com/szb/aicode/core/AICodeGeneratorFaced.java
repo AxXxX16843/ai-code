@@ -2,6 +2,7 @@ package com.szb.aicode.core;
 
 
 import com.szb.aicode.ai.AiGeneratorCodeService;
+import com.szb.aicode.ai.CodeGeneratorServiceFactory;
 import com.szb.aicode.ai.model.GeneratorHtmlResp;
 import com.szb.aicode.ai.model.GeneratorMultiFileResp;
 import com.szb.aicode.core.parser.CodeParserExecutor;
@@ -22,7 +23,7 @@ public class AICodeGeneratorFaced {
 
 
     @Resource
-    private AiGeneratorCodeService aiGeneratorCodeService;
+    private CodeGeneratorServiceFactory codeGeneratorServiceFactory;
 
     public File generatorAndSave(String userMessage,GeneratorTypeEnum type,Long appId){
 
@@ -31,13 +32,16 @@ public class AICodeGeneratorFaced {
         }
         return switch (type){
             case HTML -> {
+                AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(appId,type);
                 GeneratorHtmlResp generatorHtmlResp = aiGeneratorCodeService.generatorHtmlCode(userMessage);
                 yield CodeFileSaveExecutor.codeSave(generatorHtmlResp,GeneratorTypeEnum.HTML,appId);
             }
             case MULTI_FILE -> {
+                AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(appId,type);
                 GeneratorMultiFileResp generatorMultiFileResp = aiGeneratorCodeService.generatorMultiFileCode(userMessage);
                 yield CodeFileSaveExecutor.codeSave(generatorMultiFileResp,GeneratorTypeEnum.MULTI_FILE,appId);
             }
+
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR,"类型错误"+type.getValue());
         };
     }
@@ -49,11 +53,18 @@ public class AICodeGeneratorFaced {
         }
         return switch (type){
             case HTML -> {
+                AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(appId,type);
                 Flux<String> htmlCodeStream = aiGeneratorCodeService.generatorHtmlCodeStream(userMessage);
                 yield getStringFlux(htmlCodeStream,GeneratorTypeEnum.HTML,appId);
             }
             case MULTI_FILE -> {
+                AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(appId,type);
                 Flux<String> multiFileCodeStream = aiGeneratorCodeService.generatorMultiFileCodeStream(userMessage);
+                yield getStringFlux(multiFileCodeStream,GeneratorTypeEnum.MULTI_FILE,appId);
+            }
+            case VUE_PROJECT ->{
+                AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(appId,type);
+                Flux<String> multiFileCodeStream = aiGeneratorCodeService.generatorVueProjectCodeStream(appId,userMessage);
                 yield getStringFlux(multiFileCodeStream,GeneratorTypeEnum.MULTI_FILE,appId);
             }
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR,"类型错误"+type.getValue());

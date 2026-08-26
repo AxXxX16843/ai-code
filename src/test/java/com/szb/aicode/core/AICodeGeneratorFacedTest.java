@@ -4,8 +4,10 @@ import com.szb.aicode.ai.model.GeneratorHtmlResp;
 import com.szb.aicode.constant.AppConstant;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -21,15 +23,23 @@ class AICodeGeneratorFacedTest {
     @Test
     void generatorAndSave() {
 
-        aiCodeGeneratorFaced.generatorAndSave("帮我生成一个留言板界面，二十行代码以内", GeneratorTypeEnum.MULTI_FILE,1L);
-
+        Flux<String> codeStream = aiCodeGeneratorFaced.generatorAndSaveFluxStream(
+                "简单的任务记录网站，总代码量不超过 200 行",
+                GeneratorTypeEnum.VUE_PROJECT, 1L);
+        // 阻塞等待所有数据收集完成
+        List<String> result = codeStream.collectList().block();
+        // 验证结果
+        Assertions.assertNotNull(result);
+        String completeContent = String.join("", result);
+        Assertions.assertNotNull(completeContent);
     }
 
     @Test
     void generatorAndSaveStream() {
-
-        List<String> list = aiCodeGeneratorFaced.generatorAndSaveFluxStream("帮我生成一个个人简介页面，三十行代码以内", GeneratorTypeEnum.HTML,1L).collectList().block();
-        String join = String.join("", list);
+        aiCodeGeneratorFaced.generatorAndSave("帮我生成一个个人简介页面，十行代码以内", GeneratorTypeEnum.HTML,1L);
+        aiCodeGeneratorFaced.generatorAndSave("我刚才让你干什么", GeneratorTypeEnum.HTML,1L);
+        aiCodeGeneratorFaced.generatorAndSave("帮我生成一个留言板，十行代码以内", GeneratorTypeEnum.HTML,2L);
+        aiCodeGeneratorFaced.generatorAndSave("我刚才让你干什么", GeneratorTypeEnum.HTML,2L);
     }
     @Test
     void generatorAndSaveHtml() {

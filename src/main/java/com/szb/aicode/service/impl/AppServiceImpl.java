@@ -16,10 +16,12 @@ import com.szb.aicode.model.dto.app.AppQueryRequest;
 import com.szb.aicode.model.entity.App;
 import com.szb.aicode.mapper.AppMapper;
 import com.szb.aicode.model.entity.User;
+import com.szb.aicode.model.enums.ChatHistoryMessageTypeEnum;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.model.vo.AppVo;
 import com.szb.aicode.model.vo.UserVo;
 import com.szb.aicode.service.AppService;
+import com.szb.aicode.service.ChatHistoryService;
 import com.szb.aicode.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +53,30 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     @Resource
     private AICodeGeneratorFaced aiCodeGeneratorFaced;
 
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
+    @Override
+    public boolean removeById(Serializable id) {
+
+        if (id == null) {
+            return false;
+        }
+        // 转换为 Long 类型
+        long appId = Long.parseLong(id.toString());
+        if (appId <= 0) {
+            return false;
+        }
+        // 先删除关联的对话历史
+        try {
+            chatHistoryService.deleteChatHistory(appId);
+        } catch (Exception e) {
+            // 记录日志但不阻止应用删除
+            log.error("删除应用关联对话历史失败: {}", e.getMessage());
+        }
+        // 删除应用
+        return super.removeById(id);
+    }
 
     @Override
     public Flux<String> chatToGeneCode(String message, Long appId, User loginUser) {
@@ -61,13 +87,32 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"应用不存在");
         }
         String codeGenType = app.getCodeGenType();
+
         GeneratorTypeEnum byValue = GeneratorTypeEnum.getByValue(codeGenType);
         if(byValue==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"不支持的生成类型");
         }
+        chatHistoryService.addChatHistory(loginUser,message,
+                ChatHistoryMessageTypeEnum.USER.getValue(),appId);
 
-        return aiCodeGeneratorFaced.generatorAndSaveFluxStream(message, byValue, appId);
-
+        Flux<String> stream = aiCodeGeneratorFaced.generatorAndSaveFluxStream(message, byValue, appId);
+        StringBuilder stringBuilder = new StringBuilder();
+        return stream.
+                map(chunk->{
+                    stringBuilder.append(chunk);
+                    return chunk;
+                })
+                .doOnComplete(()->{
+                    String aiMessage= stringBuilder.toString();
+                    if (StrUtil.isNotBlank(aiMessage)) {
+                        chatHistoryService.addChatHistory(loginUser,aiMessage,ChatHistoryMessageTypeEnum.AI.getValue(),appId);
+                    }
+                })
+                .doOnError(error -> {
+            // 如果AI回复失败，也要记录错误消息
+            String errorMessage = "AI回复失败: " + error.getMessage();
+            chatHistoryService.addChatHistory(loginUser, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), appId);
+        });
     }
 
     @Override
