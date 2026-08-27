@@ -2,11 +2,15 @@
   <div class="app-chat-page">
     <div class="chat-header">
       <div class="chat-header-left">
-        <a-button @click="goBack">返回</a-button>
+        <a-button type="text" @click="goBack">返回工作台</a-button>
         <span class="app-name">{{ app.appName || '应用对话' }}</span>
       </div>
       <div class="chat-header-right">
         <a-button @click="showDetail = true">应用详情</a-button>
+        <a-button :disabled="!app.id" @click="handleDownload">
+          <template #icon><DownloadOutlined /></template>
+          下载源码
+        </a-button>
         <a-button type="primary" :loading="deploying" @click="handleDeploy">部署</a-button>
       </div>
     </div>
@@ -27,7 +31,7 @@
               style="flex-shrink: 0; background: transparent;"
             >
               <template v-if="msg.role === 'ai'">
-                <AppLogo :size="30" />
+                <AppLogo :size="30" variant="avatar" />
               </template>
             </a-avatar>
             <div class="message-bubble">
@@ -69,25 +73,20 @@
       </div>
 
       <div class="chat-right">
-        <!-- 生成中：风趣加载动画 -->
+        <!-- 生成中：普通加载状态 -->
         <div v-if="previewState === 'generating'" class="generating-animation">
-          <AppLogo :size="90" />
-          <div class="thinking-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <p class="generating-text">AI 正在努力生成中...</p>
+          <a-spin size="large" />
+          <p class="generating-text">正在生成项目，请稍候…</p>
         </div>
         <!-- 构建中（Vue 项目） -->
         <div v-else-if="previewState === 'building'" class="building-hint">
-          <a-spin />
-          <p>正在构建项目（安装依赖 + 打包）...</p>
+          <a-spin size="large" />
+          <p>正在构建项目 <small>安装依赖 · 打包</small></p>
         </div>
         <!-- 渲染中 -->
         <div v-else-if="previewState === 'rendering'" class="rendering-hint">
-          <a-spin />
-          <p>正在渲染网页效果...</p>
+          <a-spin size="large" />
+          <p>正在渲染网页效果 <small>即将完成</small></p>
         </div>
         <!-- 完成：展示网站 -->
         <iframe
@@ -105,11 +104,29 @@
       :current-user="loginUserStore.loginUser"
       @close="showDetail = false"
     />
+
+    <!-- 部署成功弹窗 -->
+    <a-modal
+      v-model:open="deployModalVisible"
+      title="部署成功"
+      :footer="null"
+    >
+      <div class="deploy-info">
+        <div class="deploy-item">
+          <span class="deploy-label">创建者：</span>
+          <span>{{ deployOwner }}</span>
+        </div>
+        <div class="deploy-item">
+          <span class="deploy-label">部署地址：</span>
+          <a :href="deployUrl" target="_blank" rel="noopener noreferrer">{{ deployUrl }}</a>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { marked } from 'marked'
@@ -117,7 +134,7 @@ import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 import AppLogo from '@/components/AppLogo.vue'
-import { CheckCircleOutlined } from '@ant-design/icons-vue'
+import { CheckCircleOutlined, DownloadOutlined } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import { getAppVoById, deploy } from '@/api/appController'
 import { get as getChatHistoryPage } from '@/api/chatHistoryController'
@@ -145,20 +162,24 @@ const inputValue = ref('')
 const isGenerating = ref(false)
 const deploying = ref(false)
 const showDetail = ref(false)
+const deployModalVisible = ref(false)
+const deployUrl = ref('')
+const deployOwner = ref('')
 const previewUrl = ref('')
 const previewState = ref('idle') // idle | generating | rendering | ready
 const hasMore = ref(false)
 const loadingHistory = ref(false)
 const cursorTime = ref(null)
 const messageListRef = ref(null)
-
-const aiAvatar = '' // 可替换为 assets/aiAvatar.png
+let previewPollTimer = null
 
 // 是否允许对话：仅作品本人可对话
 const canChat = computed(() => {
   const user = loginUserStore.loginUser
   return user && user.id && String(user.id) === String(app.value.userId)
 })
+
+const downloadUrl = computed(() => `${API_BASE_URL}/app/download/${appId.value}`)
 
 // 加载应用信息
 const fetchAppInfo = async () => {
@@ -194,13 +215,13 @@ const loadHistory = async () => {
 // 更新预览地址
 const updatePreview = () => {
   if (app.value.codeGenType && appId.value) {
-    if (app.value.codeGenType === 'vue_project' && !app.value.deployKey) {
-      // Vue 项目未部署（尚未构建 dist），无法预览
-      previewUrl.value = ''
-    } else {
-      previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, appId.value)
-    }
+    previewUrl.value = getPreviewEntryUrl()
   }
+}
+
+const getPreviewEntryUrl = () => {
+  const baseUrl = getStaticPreviewUrl(app.value.codeGenType, appId.value).replace(/\/?$/, '/')
+  return `${baseUrl}index.html`
 }
 
 const scrollToBottom = () => {
@@ -234,7 +255,8 @@ const handleGenerationDone = async () => {
 
 // 轮询静态预览，直到构建产物可访问
 const startPollingPreview = () => {
-  const url = getStaticPreviewUrl(app.value.codeGenType, appId.value)
+  if (previewPollTimer) clearTimeout(previewPollTimer)
+  const url = getPreviewEntryUrl()
   console.log('[预览] 开始轮询 URL:', url)
   let retries = 0
   const maxRetries = 90
@@ -249,14 +271,17 @@ const startPollingPreview = () => {
       console.log('[预览] 轮询状态:', res.status)
       if (res.ok) {
         previewUrl.value = url + '?t=' + Date.now()
-        previewState.value = 'ready'
+        previewState.value = 'rendering'
+        setTimeout(() => {
+          if (previewState.value === 'rendering') previewState.value = 'ready'
+        }, 180)
         return
       }
     } catch (e) {
       console.error('[预览] 轮询失败:', e)
     }
     retries++
-    setTimeout(poll, 5000)
+    previewPollTimer = setTimeout(poll, 3000)
   }
   poll()
 }
@@ -289,7 +314,7 @@ const generateCode = async (userMessage, aiMessageIndex) => {
           if (obj && typeof obj === 'object' && obj.type) {
             inner = obj
           }
-        } catch (e) {
+        } catch {
           inner = null
         }
 
@@ -387,15 +412,23 @@ const handleDeploy = async () => {
     message.success('部署成功')
     await fetchAppInfo()
     // 部署后强制刷新预览（Vue 项目 dist 已构建）
-    previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, appId.value) + '?t=' + Date.now()
+    previewUrl.value = getPreviewEntryUrl() + '?t=' + Date.now()
     previewState.value = 'ready'
-    // 部署成功后打开部署地址（新页面）
-    if (app.value.deployKey) {
-      window.open(getDeployUrl(app.value.deployKey), '_blank')
-    }
+    // 弹出部署信息框（创建者 + 部署地址超链接）
+    deployUrl.value = app.value.deployKey ? getDeployUrl(app.value.deployKey) : ''
+    deployOwner.value = app.value.userVo?.userName || '无名'
+    deployModalVisible.value = true
   } else {
     message.error('部署失败，' + res.data.message)
   }
+}
+
+const handleDownload = () => {
+  if (!app.value.id) {
+    message.info('应用信息加载中，请稍候')
+    return
+  }
+  window.open(downloadUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 const goBack = () => {
@@ -406,7 +439,7 @@ const goBack = () => {
 const renderMarkdown = (content) => {
   try {
     return marked.parse(content || '')
-  } catch (e) {
+  } catch {
     return content
   }
 }
@@ -420,8 +453,13 @@ onMounted(async () => {
 
   // 如果有至少 2 条对话记录，展示已生成的网站
   if (messages.value.length >= 2) {
-    updatePreview()
-    previewState.value = 'ready'
+    if (app.value.codeGenType === 'vue_project') {
+      previewState.value = 'building'
+      startPollingPreview()
+    } else {
+      updatePreview()
+      previewState.value = 'ready'
+    }
   }
 
   // 自己的 app 且没有对话历史，才自动发送初始 prompt
@@ -434,6 +472,10 @@ onMounted(async () => {
     scrollToBottom()
     await generateCode(app.value.initPrompt, aiMessageIndex)
   }
+})
+
+onBeforeUnmount(() => {
+  if (previewPollTimer) clearTimeout(previewPollTimer)
 })
 </script>
 
@@ -448,9 +490,9 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fff;
+  padding: 12px clamp(16px, 3vw, 32px);
+  border-bottom: 1px solid #e2e9e7;
+  background: rgba(255,255,255,.94);
 }
 
 .chat-header-left {
@@ -461,7 +503,8 @@ onMounted(async () => {
 
 .app-name {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
+  color: #10232d;
 }
 
 .chat-header-right {
@@ -486,20 +529,21 @@ onMounted(async () => {
   width: 60%;
   display: flex;
   align-items: stretch;
-  background: #f7f9fc;
-  padding: 16px;
+  background: #eef3f1;
+  padding: 18px;
 }
 
 .preview-frame {
   flex: 1;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #fff;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .preview-empty {
   margin: auto;
+  color: #82919a;
 }
 
 /* 生成中：风趣加载动画 */
@@ -509,43 +553,15 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   gap: 14px;
-}
-
-.thinking-dots {
-  display: flex;
-  gap: 8px;
-}
-
-.thinking-dots span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #1677ff;
-  animation: dotBounce 1.2s ease-in-out infinite;
-}
-
-.thinking-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.thinking-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes dotBounce {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-  50% {
-    transform: translateY(-10px);
-    opacity: 1;
-  }
+  padding: 36px 48px;
+  border: 1px solid #d8e5e0;
+  border-radius: 14px;
+  background: #f8fbfa;
+  box-shadow: 0 12px 26px rgba(16, 35, 45, .07);
 }
 
 .generating-text {
-  color: rgba(0, 0, 0, 0.45);
+  color: #51636c;
   font-size: 14px;
 }
 
@@ -559,6 +575,15 @@ onMounted(async () => {
   color: rgba(0, 0, 0, 0.45);
 }
 
+@media (max-width: 860px) {
+  .app-chat-page { height: auto; min-height: calc(100vh - 64px); }
+  .chat-body { flex-direction: column; overflow: visible; }
+  .chat-left, .chat-right { width: 100%; }
+  .chat-left { min-height: 58vh; border-right: 0; border-bottom: 1px solid #e2e9e7; }
+  .chat-right { min-height: 42vh; }
+  .preview-frame { min-height: 360px; }
+}
+
 .building-hint {
   margin: auto;
   display: flex;
@@ -567,11 +592,12 @@ onMounted(async () => {
   gap: 12px;
   color: rgba(0, 0, 0, 0.45);
 }
-
+.building-hint p, .rendering-hint p { margin: 0; font-size: 14px; color: #51636c; }
+.building-hint small, .rendering-hint small { display: block; margin-top: 5px; text-align: center; color: #82919a; font-size: 11px; }
 .message-list {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -585,7 +611,7 @@ onMounted(async () => {
 
 .message-item {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   animation: msgIn 0.3s ease;
 }
 
@@ -606,23 +632,23 @@ onMounted(async () => {
 
 .message-bubble {
   max-width: 80%;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
   word-break: break-word;
 }
 
 .message-item.user .message-bubble {
-  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+  background: #129b8a;
   color: #fff;
   border-top-right-radius: 4px;
-  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.2);
+  box-shadow: 0 5px 14px rgba(18, 155, 138, .22);
 }
 
 .message-item.ai .message-bubble {
   background: #fff;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #e2e9e7;
   border-top-left-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 14px rgba(16, 35, 45, .05);
   width: 100%;
 }
 
@@ -646,9 +672,26 @@ onMounted(async () => {
   color: #52c41a;
 }
 
+.deploy-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deploy-item {
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.deploy-label {
+  color: rgba(0, 0, 0, 0.45);
+}
+
 .chat-input-area {
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
+  padding: 14px 18px 16px;
+  border-top: 1px solid #e2e9e7;
+  background: #fbfcfc;
 }
 
 .chat-input-tools {

@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.szb.aicode.ai.AiGenRoutingService;
 import com.szb.aicode.annotation.AuthCheck;
 import com.szb.aicode.common.BaseResponse;
 import com.szb.aicode.common.DeleteRequest;
@@ -22,10 +23,12 @@ import com.szb.aicode.model.entity.User;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.model.vo.AppVo;
 import com.szb.aicode.service.ChatHistoryService;
+import com.szb.aicode.service.DownloadProjectService;
 import com.szb.aicode.service.UserService;
 import dev.langchain4j.internal.Json;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +37,7 @@ import com.szb.aicode.service.AppService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +62,38 @@ public class AppController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private DownloadProjectService downloadProjectService;
+
+    @Resource
+    private AiGenRoutingService aiGenRoutingService;
+
+
+    @GetMapping("/download/{appId}")
+    public void downloadAppCode(@PathVariable Long appId,
+                                HttpServletRequest request,
+                                HttpServletResponse response){
+
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+
+        User loginUser = userService.getLoginUser(request);
+
+        App app = appService.getById(appId);
+        if(app == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"应用不存在");
+        }
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        File file = new File(sourceDirPath);
+        ThrowUtils.throwIf(!file.exists()|| !file.isDirectory(),ErrorCode.NOT_FOUND_ERROR,"代码文件不存在");
+
+        String downloadFileName = String.valueOf(appId);
+
+        downloadProjectService.downloadProjectAsZip(sourceDirPath,downloadFileName,response);
+
+
+    }
 
     @PostMapping("/deploy")
     public BaseResponse<String> deploy(@RequestParam Long appId,HttpServletRequest request) {
@@ -101,28 +137,11 @@ public class AppController {
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
         // 参数校验
-        String initPrompt = appAddRequest.getInitPrompt();
-        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
-        // 获取当前登录用户
-        User loginUser = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
-
-        if(loginUser==null || loginUser.getId()==null){
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
-        }
-        loginUser = userService.getById(loginUser.getId());
-        // 构造入库对象
-        App app = new App();
-        BeanUtil.copyProperties(appAddRequest, app);
-        app.setUserId(loginUser.getId());
-        // 应用名称暂时为 initPrompt 前 12 位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为多文件生成
-        app.setCodeGenType(GeneratorTypeEnum.VUE_PROJECT.getValue());
-        // 插入数据库
-        boolean result = appService.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        App app = appService.getApp(appAddRequest, request);
         return ResultUtils.success(app.getId());
     }
+
+
 
     @PostMapping("/update")
     public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest, HttpServletRequest request) {

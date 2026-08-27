@@ -7,6 +7,9 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.szb.aicode.ai.AiGenRoutingService;
+import com.szb.aicode.ai.AiGeneratorCodeService;
+import com.szb.aicode.ai.CodeGeneratorServiceFactory;
 import com.szb.aicode.constant.AppConstant;
 import com.szb.aicode.core.AICodeGeneratorFaced;
 import com.szb.aicode.core.builder.VueProjectBuilder;
@@ -14,6 +17,7 @@ import com.szb.aicode.core.handle.StreamHandleExecutor;
 import com.szb.aicode.exception.BusinessException;
 import com.szb.aicode.exception.ErrorCode;
 import com.szb.aicode.exception.ThrowUtils;
+import com.szb.aicode.model.dto.app.AppAddRequest;
 import com.szb.aicode.model.dto.app.AppQueryRequest;
 import com.szb.aicode.model.entity.App;
 import com.szb.aicode.mapper.AppMapper;
@@ -27,6 +31,7 @@ import com.szb.aicode.service.ChatHistoryService;
 import com.szb.aicode.service.ScreenshotService;
 import com.szb.aicode.service.UserService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -39,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.szb.aicode.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 应用 服务层实现。
@@ -67,6 +74,50 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
     @Resource
     private ScreenshotService screenshotService;
+
+    @Resource
+    private AiGenRoutingService aiGenRoutingService;
+
+    @Resource
+    private CodeGeneratorServiceFactory codeGeneratorServiceFactory;
+
+
+
+    @Override
+    public App getApp(AppAddRequest appAddRequest, HttpServletRequest request) {
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 获取当前登录用户
+        User loginUser = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
+
+        if(loginUser==null || loginUser.getId()==null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+        }
+        loginUser = userService.getById(loginUser.getId());
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+
+        GeneratorTypeEnum generatorTypeEnum = aiGenRoutingService.routingType(initPrompt);
+
+        app.setCodeGenType(generatorTypeEnum.getValue());
+        // 插入数据库
+        boolean result = save(app);
+
+        AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(app.getId(), generatorTypeEnum);
+
+        String name = aiGeneratorCodeService.generatorName(initPrompt);
+
+        app.setAppName(name);
+
+        updateById(app);
+
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return app;
+    }
+
 
 
     @Override

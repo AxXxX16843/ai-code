@@ -1,5 +1,5 @@
 <script setup>
-const copyright = 'Axxxxxx'
+const copyright = 'AI Code · Build boldly'
 </script>
 
 <template>
@@ -11,8 +11,10 @@ const copyright = 'Axxxxxx'
 <style scoped>
 .global-footer {
   text-align: center;
-  padding: 16px 24px;
-  color: rgba(0, 0, 0, 0.45);
-  background: #f5f5f5;
+  padding: 20px 24px;
+  color: #82919a;
+  font-size: 11px;
+  letter-spacing: .08em;
+  background: transparent;
 }
 </style>

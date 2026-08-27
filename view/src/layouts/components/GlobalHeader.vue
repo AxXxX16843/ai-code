@@ -55,8 +55,8 @@ const doLogout = async () => {
     <div class="header-inner">
       <!-- 左侧：logo + 标题 -->
       <div class="header-left">
-        <AppLogo :size="32" />
-        <span class="header-title">{{ siteTitle }}</span>
+        <AppLogo :size="34" variant="brand" />
+        <div class="brand-lockup"><span class="header-title">{{ siteTitle }}</span><span class="header-kicker">AI WORKSPACE</span></div>
       </div>
 
       <!-- 中间：菜单（桌面端） -->
@@ -120,9 +120,10 @@ const doLogout = async () => {
   z-index: 100;
   height: 64px;
   line-height: 64px;
-  padding: 0 24px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  padding: 0 clamp(16px, 4vw, 48px);
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid #e2e9e7;
 }
 
 .header-inner {
@@ -134,7 +135,7 @@ const doLogout = async () => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -145,17 +146,23 @@ const doLogout = async () => {
 }
 
 .header-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #10232d;
   white-space: nowrap;
 }
+.brand-lockup { display:flex; flex-direction:column; line-height:1.05; gap:3px; }
+.header-kicker { font-size:9px; letter-spacing:.18em; color:#82919a; font-weight:700; }
 
 .header-menu {
   flex: 1;
   margin: 0 24px;
   min-width: 0;
 }
+:deep(.ant-menu) { background: transparent; border-bottom: 0; color: #51636c; font-weight: 600; }
+:deep(.ant-menu-item-selected) { color: #08786e !important; }
+:deep(.ant-menu-item-selected::after) { border-bottom-color: #129b8a !important; }
 
 .header-right {
   display: flex;

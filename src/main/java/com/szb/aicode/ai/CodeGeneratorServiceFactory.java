@@ -46,7 +46,6 @@ public class CodeGeneratorServiceFactory {
             log.debug("AI 服务实例被移除，缓存键: {}, 原因: {}", key, cause);})
             .build();
 
-
     public AiGeneratorCodeService getAiGeneratorCodeService(Long appId) {
 
         String cacheKey = getCacheKey(appId, GeneratorTypeEnum.HTML);
@@ -59,6 +58,7 @@ public class CodeGeneratorServiceFactory {
         String cacheKey = getCacheKey(appId, generatorTypeEnum);
 
         return serviceCache.get(cacheKey,key->getAiService(appId,generatorTypeEnum));
+
     }
 
     private AiGeneratorCodeService getAiService(Long appId, GeneratorTypeEnum generatorTypeEnum) {
@@ -67,7 +67,6 @@ public class CodeGeneratorServiceFactory {
                 .maxMessages(20)
                 .build();
         chatHistoryService.loadMemory(appId,chatMemory,20);
-
         return switch (generatorTypeEnum) {
             case MULTI_FILE,HTML->AiServices.builder(AiGeneratorCodeService.class).
                     streamingChatModel(openAiStreamingChatModel)
@@ -76,6 +75,7 @@ public class CodeGeneratorServiceFactory {
                     .build();
             case VUE_PROJECT -> AiServices.builder(AiGeneratorCodeService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
+                    .chatModel(chatModel)
                     .tools(new FileWriterTool())
                     .chatMemoryProvider(memoryId->chatMemory)
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(

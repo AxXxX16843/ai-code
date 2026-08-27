@@ -111,11 +111,15 @@ const doDelete = async (record) => {
 
 <style scoped>
 #chatHistoryManagePage {
-  background: #fff;
+  max-width: 1220px;
+  margin: 26px auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(16, 35, 45, .06);
 }
+@media (max-width: 768px) { #chatHistoryManagePage { margin: 12px 0; padding: 16px; overflow-x: auto; } }
 
 .message-cell {
   display: block;

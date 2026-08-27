@@ -104,6 +104,6 @@ onMounted(async () => {
 <style scoped>
 .app-update-page {
   max-width: 480px;
-  margin: 24px auto;
+  margin: 32px auto;
 }
 </style>

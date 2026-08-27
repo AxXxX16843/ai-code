@@ -1,8 +1,9 @@
 <template>
   <div id="userLoginPage">
     <div class="auth-card">
-      <h2 class="title">AI Code</h2>
-      <div class="desc">不写一行代码，生成完整应用</div>
+      <div class="auth-mark"><AppLogo :size="56" variant="brand" /></div>
+      <h2 class="title">欢迎回来</h2>
+      <div class="desc">进入你的 AI 产品工作台</div>
       <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
         <a-form-item
           name="userAccount"
@@ -44,6 +45,7 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { login } from '@/api/userController'
 import { useLoginUserStore } from '@/stores/loginUser'
+import AppLogo from '@/components/AppLogo.vue'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -80,37 +82,37 @@ const handleSubmit = async (values) => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: linear-gradient(180deg, #eaf4ff 0%, #ffffff 100%);
+  background: #eef3f1;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   background: #fff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e9e7;
+  border-radius: 14px;
+  padding: 36px;
+  box-shadow: 0 18px 42px rgba(16, 35, 45, .1);
 }
+.auth-mark { display:flex; justify-content:center; margin-bottom:16px; }
 
 .title {
   text-align: center;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 25px;
+  font-weight: 700;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #1677ff, #722ed1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #10232d;
 }
 
 .desc {
   text-align: center;
-  color: #bbb;
+  color: #82919a;
   margin-bottom: 24px;
 }
 
 .tips {
   margin-bottom: 16px;
-  color: #bbb;
+  color: #82919a;
   font-size: 13px;
   text-align: right;
 }

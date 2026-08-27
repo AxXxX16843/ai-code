@@ -4,7 +4,7 @@
       <img class="app-card-cover" :src="cover" :alt="app.appName" loading="lazy" />
       <!-- 悬停浮现操作按钮 -->
       <div class="app-card-overlay">
-        <a-button type="primary" size="middle" block @click="goChat">查看对话</a-button>
+        <a-button type="primary" size="middle" block @click="goChat">进入工作台</a-button>
         <a-button size="middle" block ghost @click="goDeploy">查看作品</a-button>
       </div>
     </div>
@@ -39,7 +39,7 @@ const cover = computed(() => {
   if (props.app.cover) {
     return props.app.cover
   }
-  return `https://picsum.photos/400/300?random=${props.app.id}`
+  return `https://picsum.photos/640/480?random=${props.app.id}`
 })
 
 // 跳转应用对话页
@@ -64,17 +64,19 @@ const goDeploy = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 26px rgba(16, 35, 45, .06);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
   height: 100%;
 }
 
 .app-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  border-color: rgba(18, 155, 138, .5);
+  box-shadow: 0 16px 32px rgba(16, 35, 45, .12);
 }
 
 .app-card-cover-wrap {
@@ -84,9 +86,9 @@ const goDeploy = () => {
 
 .app-card-cover {
   width: 100%;
-  aspect-ratio: 1 / 0.8;
+  aspect-ratio: 1 / 0.68;
   object-fit: cover;
-  background: #eee;
+  background: #dfe8e5;
   transition: transform 0.3s ease;
 }
 
@@ -104,7 +106,7 @@ const goDeploy = () => {
   justify-content: center;
   gap: 14px;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(16, 35, 45, .78);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -125,7 +127,7 @@ const goDeploy = () => {
 .app-card-name {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -133,7 +135,7 @@ const goDeploy = () => {
 
 .app-card-user {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--muted);
   margin-top: 4px;
   display: flex;
   align-items: center;
