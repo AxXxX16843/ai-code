@@ -50,3 +50,10 @@ langchain4j:
       log-requests: true
       log-responses: true
       max-tokens: 8192
+cos:
+  client:
+    host: 'https://ai-code-1475684616.cos.ap-beijing.myqcloud.com'
+    secretId: AKIDWt57wa186zkLn5FH6iAQTJwNcfVzMbif
+    secretKey: nPsAKI5hAg7hCk9QdgYFkAWi0CHF4hA0
+    region: ap-beijing
+    bucket: ai-code-1475684616

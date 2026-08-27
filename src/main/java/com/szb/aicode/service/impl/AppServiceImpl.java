@@ -24,6 +24,7 @@ import com.szb.aicode.model.vo.AppVo;
 import com.szb.aicode.model.vo.UserVo;
 import com.szb.aicode.service.AppService;
 import com.szb.aicode.service.ChatHistoryService;
+import com.szb.aicode.service.ScreenshotService;
 import com.szb.aicode.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ScreenshotService screenshotService;
 
 
     @Override
@@ -160,8 +164,28 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署信息更新失败");
         }
-        return AppConstant.CODE_DEPLOY_HOST+File.separator+deployKey;
+        String url = AppConstant.CODE_DEPLOY_HOST + File.separator + deployKey;
+
+        generateAppScreenshotAsync(appId,url);
+
+        return url;
     }
+
+    private void generateAppScreenshotAsync(Long appId,String url) {
+
+        Thread.startVirtualThread(()->{
+
+            String cosUrl = screenshotService.generateAndUploadScreenshot(url);
+            ThrowUtils.throwIf(cosUrl==null,ErrorCode.SYSTEM_ERROR,"截图上传失败");
+            App app = new App();
+            app.setId(appId);
+            app.setCover(cosUrl);
+            boolean b = updateById(app);
+            ThrowUtils.throwIf(!b, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
+
+    }
+
 
     @Override
     public AppVo getAppVO(App app){
@@ -218,6 +242,5 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             return appVO;
         }).collect(Collectors.toList());
     }
-
 
 }

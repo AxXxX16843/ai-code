@@ -193,12 +193,12 @@ const loadHistory = async () => {
 
 // 更新预览地址
 const updatePreview = () => {
-  if (app.value.codeGenType && app.value.id) {
+  if (app.value.codeGenType && appId.value) {
     if (app.value.codeGenType === 'vue_project' && !app.value.deployKey) {
       // Vue 项目未部署（尚未构建 dist），无法预览
       previewUrl.value = ''
     } else {
-      previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, app.value.id)
+      previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, appId.value)
     }
   }
 }
@@ -234,7 +234,8 @@ const handleGenerationDone = async () => {
 
 // 轮询静态预览，直到构建产物可访问
 const startPollingPreview = () => {
-  const url = getStaticPreviewUrl(app.value.codeGenType, app.value.id)
+  const url = getStaticPreviewUrl(app.value.codeGenType, appId.value)
+  console.log('[预览] 开始轮询 URL:', url)
   let retries = 0
   const maxRetries = 90
   const poll = async () => {
@@ -244,14 +245,15 @@ const startPollingPreview = () => {
       return
     }
     try {
-      const res = await fetch(url, { method: 'HEAD' })
+      const res = await fetch(url)
+      console.log('[预览] 轮询状态:', res.status)
       if (res.ok) {
         previewUrl.value = url + '?t=' + Date.now()
         previewState.value = 'ready'
         return
       }
     } catch (e) {
-      // 网络异常，继续轮询
+      console.error('[预览] 轮询失败:', e)
     }
     retries++
     setTimeout(poll, 5000)
@@ -385,7 +387,7 @@ const handleDeploy = async () => {
     message.success('部署成功')
     await fetchAppInfo()
     // 部署后强制刷新预览（Vue 项目 dist 已构建）
-    previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, app.value.id) + '?t=' + Date.now()
+    previewUrl.value = getStaticPreviewUrl(app.value.codeGenType, appId.value) + '?t=' + Date.now()
     previewState.value = 'ready'
     // 部署成功后打开部署地址（新页面）
     if (app.value.deployKey) {

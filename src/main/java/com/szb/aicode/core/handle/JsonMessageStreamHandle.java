@@ -88,7 +88,7 @@ public class JsonMessageStreamHandle {
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n[选择工具] 写入文件\n\n";
+                    return "\n\n🔧 选择工具 写入文件\n\n";
                 } else {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
