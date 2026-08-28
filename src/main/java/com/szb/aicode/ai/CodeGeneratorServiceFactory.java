@@ -4,6 +4,7 @@ package com.szb.aicode.ai;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.szb.aicode.ai.tools.FileWriterTool;
+import com.szb.aicode.ai.tools.ToolManager;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
@@ -37,6 +38,10 @@ public class CodeGeneratorServiceFactory {
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
+
+    @Resource
+    private ToolManager toolManager;
+
 
     private final Cache<String,AiGeneratorCodeService> serviceCache= Caffeine.newBuilder()
             .maximumSize(1000)
@@ -76,7 +81,7 @@ public class CodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiGeneratorCodeService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatModel(chatModel)
-                    .tools(new FileWriterTool())
+                    .tools(toolManager.getAllTool())
                     .chatMemoryProvider(memoryId->chatMemory)
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()

@@ -5,6 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.szb.aicode.ai.model.message.*;
+import com.szb.aicode.ai.tools.BaseTool;
+import com.szb.aicode.ai.tools.ToolManager;
 import com.szb.aicode.constant.AppConstant;
 import com.szb.aicode.core.builder.VueProjectBuilder;
 import com.szb.aicode.model.entity.User;
@@ -27,6 +29,10 @@ public class JsonMessageStreamHandle {
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ToolManager toolManager;
+
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -54,14 +60,23 @@ public class JsonMessageStreamHandle {
                 .doOnComplete(() -> {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
-                    chatHistoryService.addChatHistory(loginUser, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(),appId);
+                    try {
+                        chatHistoryService.addChatHistory(loginUser, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), appId);
+                    } catch (Exception e) {
+                        // 持久化失败不应破坏已完成的 SSE 响应，避免前端误判为生成失败
+                        log.error("保存 AI 对话历史失败，appId={}", appId, e);
+                    }
                     String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
                     vueProjectBuilder.buildProjectAsync(projectPath);
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息
                     String errorMessage = "AI回复失败: " + error.getMessage();
-                    chatHistoryService.addChatHistory(loginUser, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(),appId);
+                    try {
+                        chatHistoryService.addChatHistory(loginUser, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), appId);
+                    } catch (Exception e) {
+                        log.error("保存 AI 错误消息失败，appId={}", appId, e);
+                    }
 
                 });
     }
@@ -84,11 +99,14 @@ public class JsonMessageStreamHandle {
             case TOOL_REQUEST -> {
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
+                String toolName = toolRequestMessage.getName();
                 // 检查是否是第一次看到这个工具 ID
                 if (toolId != null && !seenToolIds.contains(toolId)) {
+
+                    BaseTool tool = toolManager.getTool(toolName);
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n🔧 选择工具 写入文件\n\n";
+                    return tool.generateToolRequestResponse();
                 } else {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
@@ -97,18 +115,24 @@ public class JsonMessageStreamHandle {
             case TOOL_EXECUTED -> {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                String relativeFilePath = jsonObject.getStr("relativeFilePath");
-                String suffix = FileUtil.getSuffix(relativeFilePath);
-                String content = jsonObject.getStr("content");
-                String result = String.format("""
-                        🔧工具调用 写入文件 %s
-                        ```%s
-                        %s
-                        ```
-                        """, relativeFilePath, suffix, content);
-                // 输出前端和要持久化的内容
+                String toolName = toolExecutedMessage.getName();
+                BaseTool tool = toolManager.getTool(toolName);
+                String result = tool.generateToolExecutedResult(jsonObject);
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
+
+//                String relativeFilePath = jsonObject.getStr("relativeFilePath");
+//                String suffix = FileUtil.getSuffix(relativeFilePath);
+//                String content = jsonObject.getStr("content");
+//                String result = String.format("""
+//                        🔧工具调用 写入文件 %s
+//                        ```%s
+//                        %s
+//                        ```
+//                        """, relativeFilePath, suffix, content);
+//                // 输出前端和要持久化的内容
+//                String output = String.format("\n\n%s\n\n", result);
+//                chatHistoryStringBuilder.append(output);
                 return output;
             }
             default -> {

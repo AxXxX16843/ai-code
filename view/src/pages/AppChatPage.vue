@@ -35,8 +35,11 @@
               </template>
             </a-avatar>
             <div class="message-bubble">
+              <div v-if="msg.role === 'ai' && msg.content && msg.loading" class="streaming-content">
+                {{ msg.content }}
+              </div>
               <div
-                v-if="msg.role === 'ai' && msg.content"
+                v-else-if="msg.role === 'ai' && msg.content"
                 class="markdown-body"
                 v-html="renderMarkdown(msg.content)"
               ></div>
@@ -51,6 +54,24 @@
           </div>
         </div>
         <div class="chat-input-area">
+          <a-alert
+            v-if="selectedElement"
+            class="selected-element-alert"
+            type="info"
+            show-icon
+            closable
+            @close="clearSelectedElement"
+          >
+            <template #message>
+              已选中 <strong>&lt;{{ selectedElement.tagName }}&gt;</strong> 元素
+            </template>
+            <template #description>
+              <div class="selected-element-detail">
+                <code>{{ selectedElement.selector }}</code>
+                <span v-if="selectedElement.textContent">{{ selectedElement.textContent }}</span>
+              </div>
+            </template>
+          </a-alert>
           <a-tooltip
             :title="!canChat ? '无法在别人的作品下对话哦~' : ''"
             placement="top"
@@ -65,6 +86,17 @@
             />
           </a-tooltip>
           <div class="chat-input-tools">
+            <a-tooltip :title="visualEditTooltip">
+              <a-button
+                :type="editMode ? 'primary' : 'default'"
+                :danger="editMode"
+                :disabled="!canUseVisualEditor"
+                @click="toggleEditMode"
+              >
+                <template #icon><SelectOutlined /></template>
+                {{ editMode ? '退出编辑' : '可视化编辑' }}
+              </a-button>
+            </a-tooltip>
             <a-button type="primary" :loading="isGenerating" :disabled="!canChat" @click="handleSend">
               发送
             </a-button>
@@ -73,6 +105,10 @@
       </div>
 
       <div class="chat-right">
+        <div v-if="editMode" class="preview-edit-status">
+          <SelectOutlined />
+          <span>选择要修改的页面元素</span>
+        </div>
         <!-- 生成中：普通加载状态 -->
         <div v-if="previewState === 'generating'" class="generating-animation">
           <a-spin size="large" />
@@ -91,8 +127,10 @@
         <!-- 完成：展示网站 -->
         <iframe
           v-else-if="previewState === 'ready' && previewUrl"
+          ref="iframeRef"
           :src="previewUrl"
-          class="preview-frame"
+          :class="['preview-frame', { 'preview-frame-editing': editMode }]"
+          @load="handleIframeLoad"
         />
         <a-empty v-else description="生成完成后将在这里展示网站效果" class="preview-empty" />
       </div>
@@ -134,12 +172,13 @@ import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 import AppLogo from '@/components/AppLogo.vue'
-import { CheckCircleOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { CheckCircleOutlined, DownloadOutlined, SelectOutlined } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import { getAppVoById, deploy } from '@/api/appController'
 import { get as getChatHistoryPage } from '@/api/chatHistoryController'
 import { API_BASE_URL, getStaticPreviewUrl, getDeployUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { buildVisualEditPrompt, useVisualEditor } from '@/composables/useVisualEditor'
 
 marked.use(
   markedHighlight({
@@ -172,6 +211,19 @@ const loadingHistory = ref(false)
 const cursorTime = ref(null)
 const messageListRef = ref(null)
 let previewPollTimer = null
+let scrollTimer = null
+
+const {
+  iframeRef,
+  editMode,
+  selectedElement,
+  toggleEditMode,
+  exitEditMode,
+  clearSelectedElement,
+  handleIframeLoad,
+} = useVisualEditor({
+  onError: () => message.error('无法开启可视化编辑，请确认预览页面与当前页面同源'),
+})
 
 // 是否允许对话：仅作品本人可对话
 const canChat = computed(() => {
@@ -180,6 +232,15 @@ const canChat = computed(() => {
 })
 
 const downloadUrl = computed(() => `${API_BASE_URL}/app/download/${appId.value}`)
+const canUseVisualEditor = computed(
+  () => canChat.value && !isGenerating.value && previewState.value === 'ready' && Boolean(previewUrl.value),
+)
+const visualEditTooltip = computed(() => {
+  if (editMode.value) return '退出可视化编辑'
+  if (!canChat.value) return '只能编辑自己的应用'
+  if (previewState.value !== 'ready') return '网站预览就绪后可使用'
+  return '在右侧预览中选择要修改的元素'
+})
 
 // 加载应用信息
 const fetchAppInfo = async () => {
@@ -225,11 +286,15 @@ const getPreviewEntryUrl = () => {
 }
 
 const scrollToBottom = () => {
-  nextTick(() => {
-    if (messageListRef.value) {
-      messageListRef.value.scrollTop = messageListRef.value.scrollHeight
-    }
-  })
+  if (scrollTimer !== null) return
+  scrollTimer = setTimeout(() => {
+    nextTick(() => {
+      if (messageListRef.value) {
+        messageListRef.value.scrollTop = messageListRef.value.scrollHeight
+      }
+    })
+    scrollTimer = null
+  }, 80)
 }
 
 const handleError = (error, aiMessageIndex) => {
@@ -290,6 +355,35 @@ const startPollingPreview = () => {
 const generateCode = async (userMessage, aiMessageIndex) => {
   let eventSource = null
   let streamCompleted = false
+  let flushTimer = null
+  let fullContent = ''
+  let pendingContent = ''
+
+  const flushContent = () => {
+    if (pendingContent) {
+      fullContent += pendingContent
+      pendingContent = ''
+      messages.value[aiMessageIndex].content = fullContent
+      scrollToBottom()
+    }
+    flushTimer = null
+  }
+
+  const scheduleFlush = () => {
+    if (flushTimer === null) flushTimer = setTimeout(flushContent, 80)
+  }
+
+  const completeStream = async () => {
+    if (streamCompleted) return
+    streamCompleted = true
+    if (flushTimer !== null) clearTimeout(flushTimer)
+    flushContent()
+    messages.value[aiMessageIndex].loading = false
+    isGenerating.value = false
+    eventSource?.close()
+    inputValue.value = ''
+    await handleGenerationDone()
+  }
 
   try {
     const params = new URLSearchParams({
@@ -300,8 +394,6 @@ const generateCode = async (userMessage, aiMessageIndex) => {
 
     eventSource = new EventSource(url, { withCredentials: true })
     previewState.value = 'generating'
-
-    let fullContent = ''
 
     eventSource.onmessage = function (event) {
       if (streamCompleted) return
@@ -338,44 +430,35 @@ const generateCode = async (userMessage, aiMessageIndex) => {
           } else if (inner.type === 'ai_response') {
             const content = inner.data
             if (content !== undefined && content !== null) {
-              fullContent += content
-              messages.value[aiMessageIndex].content = fullContent
-              messages.value[aiMessageIndex].loading = false
+              pendingContent += content
+              scheduleFlush()
             }
           }
         } else {
           // HTML/MULTI_FILE：parsed.d 是原始代码片段
           const content = parsed.d
           if (content !== undefined && content !== null) {
-            fullContent += content
-            messages.value[aiMessageIndex].content = fullContent
-            messages.value[aiMessageIndex].loading = false
+            pendingContent += content
+            scheduleFlush()
           }
         }
-        scrollToBottom()
       } catch (error) {
         console.error('解析消息失败:', error)
+        if (flushTimer !== null) clearTimeout(flushTimer)
         handleError(error, aiMessageIndex)
       }
     }
 
     eventSource.addEventListener('done', function () {
-      if (streamCompleted) return
-      streamCompleted = true
-      isGenerating.value = false
-      eventSource?.close()
-      inputValue.value = ''
-      handleGenerationDone()
+      completeStream()
     })
 
     eventSource.onerror = function () {
       if (streamCompleted || !isGenerating.value) return
       if (eventSource?.readyState === EventSource.CONNECTING) {
-        streamCompleted = true
-        isGenerating.value = false
-        eventSource?.close()
-        handleGenerationDone()
+        completeStream()
       } else {
+        if (flushTimer !== null) clearTimeout(flushTimer)
         handleError(new Error('SSE连接错误'), aiMessageIndex)
       }
     }
@@ -394,17 +477,22 @@ const handleSend = async () => {
   }
   if (isGenerating.value) return
 
+  const selectedContext = selectedElement.value
+  const backendMessage = buildVisualEditPrompt(userMessage, selectedContext)
+
   messages.value.push({ role: 'user', content: userMessage })
   const aiMessageIndex = messages.value.length
   messages.value.push({ role: 'ai', content: '', loading: true })
   inputValue.value = ''
   isGenerating.value = true
+  exitEditMode()
   scrollToBottom()
-  await generateCode(userMessage, aiMessageIndex)
+  await generateCode(backendMessage, aiMessageIndex)
 }
 
 // 部署应用
 const handleDeploy = async () => {
+  exitEditMode()
   deploying.value = true
   const res = await deploy({ appId: appId.value })
   deploying.value = false
@@ -476,6 +564,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (previewPollTimer) clearTimeout(previewPollTimer)
+  if (scrollTimer) clearTimeout(scrollTimer)
 })
 </script>
 
@@ -526,6 +615,7 @@ onBeforeUnmount(() => {
 }
 
 .chat-right {
+  position: relative;
   width: 60%;
   display: flex;
   align-items: stretch;
@@ -539,6 +629,29 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.preview-frame-editing {
+  box-shadow: 0 0 0 2px rgba(19, 168, 138, 0.28), 0 8px 24px rgba(16, 35, 45, 0.1);
+}
+
+.preview-edit-status {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 6px;
+  color: #fff;
+  background: rgba(8, 125, 104, 0.92);
+  box-shadow: 0 7px 20px rgba(8, 55, 47, 0.18);
+  font-size: 13px;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .preview-empty {
@@ -656,6 +769,14 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
 }
 
+.streaming-content {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #51636c;
+  font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .loading-text {
   color: rgba(0, 0, 0, 0.45);
 }
@@ -693,10 +814,34 @@ onBeforeUnmount(() => {
   border-top: 1px solid #e2e9e7;
   background: #fbfcfc;
 }
-
+.selected-element-alert {
+  margin-bottom: 10px;
+}
+.selected-element-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.selected-element-detail code {
+  overflow: hidden;
+  color: #087d68;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.selected-element-detail span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #51636c;
+  font-size: 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 .chat-input-tools {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 8px;
 }
 </style>
