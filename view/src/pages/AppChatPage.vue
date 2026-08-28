@@ -351,6 +351,22 @@ const startPollingPreview = () => {
   poll()
 }
 
+// 页面刷新时只检查已有构建产物，不等待一个已经失败的历史任务。
+const restoreExistingPreview = async () => {
+  const url = getPreviewEntryUrl()
+  try {
+    const res = await fetch(url, { cache: 'no-store' })
+    if (res.ok) {
+      previewUrl.value = `${url}?t=${Date.now()}`
+      previewState.value = 'ready'
+      return
+    }
+  } catch (error) {
+    console.warn('[预览] 暂无可恢复的构建产物:', error)
+  }
+  previewState.value = 'idle'
+}
+
 // SSE 流式生成代码
 const generateCode = async (userMessage, aiMessageIndex) => {
   let eventSource = null
@@ -383,6 +399,15 @@ const generateCode = async (userMessage, aiMessageIndex) => {
     eventSource?.close()
     inputValue.value = ''
     await handleGenerationDone()
+  }
+
+  const failStream = (error) => {
+    if (streamCompleted) return
+    streamCompleted = true
+    if (flushTimer !== null) clearTimeout(flushTimer)
+    flushContent()
+    eventSource?.close()
+    handleError(error, aiMessageIndex)
   }
 
   try {
@@ -453,17 +478,16 @@ const generateCode = async (userMessage, aiMessageIndex) => {
       completeStream()
     })
 
+    eventSource.addEventListener('generation-error', function (event) {
+      failStream(new Error(event.data || '项目生成失败'))
+    })
+
     eventSource.onerror = function () {
       if (streamCompleted || !isGenerating.value) return
-      if (eventSource?.readyState === EventSource.CONNECTING) {
-        completeStream()
-      } else {
-        if (flushTimer !== null) clearTimeout(flushTimer)
-        handleError(new Error('SSE连接错误'), aiMessageIndex)
-      }
+      failStream(new Error('生成连接意外中断'))
     }
   } catch (error) {
-    handleError(error, aiMessageIndex)
+    failStream(error)
   }
 }
 
@@ -542,8 +566,7 @@ onMounted(async () => {
   // 如果有至少 2 条对话记录，展示已生成的网站
   if (messages.value.length >= 2) {
     if (app.value.codeGenType === 'vue_project') {
-      previewState.value = 'building'
-      startPollingPreview()
+      await restoreExistingPreview()
     } else {
       updatePreview()
       previewState.value = 'ready'

@@ -50,9 +50,11 @@ public class StaticResourceController {
             String baseDir = PREVIEW_ROOT_DIR + "/" + deployKey;
             if (deployKey.startsWith("vue_project_")) {
                 File dist = new File(baseDir, "dist");
-                if (dist.exists() && dist.isDirectory()) {
-                    baseDir = dist.getAbsolutePath();
+                // Vue 源码中的绝对 /src 路径会误加载主站资源，未构建时必须返回 404。
+                if (!dist.exists() || !dist.isDirectory()) {
+                    return ResponseEntity.notFound().build();
                 }
+                baseDir = dist.getAbsolutePath();
             }
             // 构建文件路径
             String filePath = baseDir + resourcePath;

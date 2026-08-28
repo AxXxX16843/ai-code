@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.szb.aicode.ai.AiGenRoutingService;
+import com.szb.aicode.ai.AiGenRoutingServiceFactory;
 import com.szb.aicode.ai.AiGeneratorCodeService;
 import com.szb.aicode.ai.CodeGeneratorServiceFactory;
 import com.szb.aicode.constant.AppConstant;
@@ -34,6 +35,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
@@ -79,10 +81,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private AiGenRoutingService aiGenRoutingService;
 
     @Resource
-    private CodeGeneratorServiceFactory codeGeneratorServiceFactory;
+    private AiGenRoutingServiceFactory aiGenRoutingServiceFactory;
 
 
 
+
+    @Transactional
     @Override
     public App getApp(AppAddRequest appAddRequest, HttpServletRequest request) {
         String initPrompt = appAddRequest.getInitPrompt();
@@ -106,9 +110,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         // 插入数据库
         boolean result = save(app);
 
-        AiGeneratorCodeService aiGeneratorCodeService = codeGeneratorServiceFactory.getAiGeneratorCodeService(app.getId(), generatorTypeEnum);
+        AiGenRoutingService aiGenRoutingService1 = aiGenRoutingServiceFactory.getAiGenRoutingService();
 
-        String name = aiGeneratorCodeService.generatorName(initPrompt);
+        String name = aiGenRoutingService1.getName(initPrompt);
 
         app.setAppName(name);
 

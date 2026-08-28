@@ -29,6 +29,7 @@ import dev.langchain4j.internal.Json;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -54,6 +55,7 @@ import static com.szb.aicode.constant.UserConstant.USER_LOGIN_STATE;
  */
 @RestController
 @RequestMapping("/app")
+@Slf4j
 public class AppController {
 
     @Resource
@@ -115,14 +117,21 @@ public class AppController {
                                            @RequestParam Long appId,
                                            HttpServletRequest request) {
         ThrowUtils.throwIf(message==null,ErrorCode.PARAMS_ERROR,"提示词不能为空");
-        ThrowUtils.throwIf(appId==null && appId<0,ErrorCode.PARAMS_ERROR,"应用id错误");
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用id错误");
         User loginUser = userService.getLoginUser(request);
         Flux<String> stringFlux = appService.chatToGeneCode(message, appId, loginUser);
-        return stringFlux.map(chunk->{
+        Flux<ServerSentEvent<String>> responseFlux = stringFlux.map(chunk->{
             Map<String,String> map =Map.of("d",chunk);
             String jsonStr = JSONUtil.toJsonStr(map);
             return ServerSentEvent.<String>builder().data(jsonStr).build();
-        })
+        }).onErrorResume(error -> {
+            log.error("应用代码生成失败, appId={}", appId, error);
+            return Flux.just(ServerSentEvent.<String>builder()
+                    .event("generation-error")
+                    .data("项目生成失败，请重试")
+                    .build());
+        });
+        return responseFlux
                 .concatWith(Mono.just(
                         // 发送结束事件
                         ServerSentEvent.<String>builder()
@@ -286,8 +295,6 @@ public class AppController {
     }
 
 }
-
-
 
 
 

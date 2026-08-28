@@ -61,3 +61,8 @@ cos:
     secretKey: nPsAKI5hAg7hCk9QdgYFkAWi0CHF4hA0
     region: ap-beijing
     bucket: ai-code-1475684616
+pexels:
+  api-key: '5FjsacM5aBmBjXZZU6aRZMGIIph9ejpLdP8ZlCveGzoHRi1OqtRoeciv'
+dashscope:
+  api-key: 'sk-ws-H.EXLLRDL.E4rV.MEUCIQD2eEj_TkqavXr2dWN9T_BwOzSZpGVG4sRJFFTJqFTnYAIgNgaNq53Pm1gZJxehbU0JyfijWrViq3zTKgCoB4HDFbg'
+  image-model: wan2.2-t2i-flash

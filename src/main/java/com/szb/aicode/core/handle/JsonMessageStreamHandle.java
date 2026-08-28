@@ -88,6 +88,10 @@ public class JsonMessageStreamHandle {
         // 解析 JSON
         StreamMessage streamMessage = JSONUtil.toBean(chunk, StreamMessage.class);
         StreamMessageTypeEnum typeEnum = StreamMessageTypeEnum.getEnumByValue(streamMessage.getType());
+        if (typeEnum == null) {
+            log.warn("忽略未知的流消息类型: {}", streamMessage.getType());
+            return "";
+        }
         switch (typeEnum) {
             case AI_RESPONSE -> {
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
@@ -101,11 +105,13 @@ public class JsonMessageStreamHandle {
                 String toolId = toolRequestMessage.getId();
                 String toolName = toolRequestMessage.getName();
                 // 检查是否是第一次看到这个工具 ID
-                if (toolId != null && !seenToolIds.contains(toolId)) {
-
+                if (toolId == null || seenToolIds.add(toolId)) {
                     BaseTool tool = toolManager.getTool(toolName);
-                    // 第一次调用这个工具，记录 ID 并完整返回工具信息
-                    seenToolIds.add(toolId);
+                    if (tool == null) {
+                        log.warn("收到未注册的工具请求: name={}, id={}", toolName, toolId);
+                        return String.format("\n\n[选择工具] %s\n\n", StrUtil.blankToDefault(toolName, "未知工具"));
+                    }
+                    // 第一次调用这个工具时完整返回工具信息
                     return tool.generateToolRequestResponse();
                 } else {
                     // 不是第一次调用这个工具，直接返回空
@@ -117,7 +123,13 @@ public class JsonMessageStreamHandle {
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
                 String toolName = toolExecutedMessage.getName();
                 BaseTool tool = toolManager.getTool(toolName);
-                String result = tool.generateToolExecutedResult(jsonObject);
+                String result;
+                if (tool == null) {
+                    log.warn("收到未注册工具的执行结果: name={}, id={}", toolName, toolExecutedMessage.getId());
+                    result = StrUtil.blankToDefault(toolExecutedMessage.getResult(), "未知工具执行失败");
+                } else {
+                    result = tool.generateToolExecutedResult(jsonObject);
+                }
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
 

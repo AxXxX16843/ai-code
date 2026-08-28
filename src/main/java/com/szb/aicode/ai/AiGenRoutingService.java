@@ -10,5 +10,12 @@ public interface AiGenRoutingService {
     GeneratorTypeEnum routingType(String userMessage);
 
 
+    @SystemMessage(fromResource = "prompt/codegen-name-system-prompt.txt")
+
+    String getName(String userMessage);
+
+
+
+
 
 }
