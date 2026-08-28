@@ -1,6 +1,7 @@
 package com.szb.aicode.langgraph4j.state;
 
 import com.szb.aicode.langgraph4j.model.ImageResource;
+import com.szb.aicode.langgraph4j.model.QualityResult;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +37,11 @@ public class WorkflowContext implements Serializable {
      * 用户原始输入的提示词
      */
     private String originalPrompt;
+
+    /**
+     * 质量检查结果
+     */
+    private QualityResult qualityResult;
 
     /**
      * 图片资源字符串

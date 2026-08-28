@@ -2,8 +2,10 @@ package com.szb.aicode.langgraph4j;
 
 import com.szb.aicode.exception.BusinessException;
 import com.szb.aicode.exception.ErrorCode;
+import com.szb.aicode.langgraph4j.model.QualityResult;
 import com.szb.aicode.langgraph4j.node.*;
 import com.szb.aicode.langgraph4j.state.WorkflowContext;
+import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.CompiledGraph;
 import org.bsc.langgraph4j.GraphRepresentation;
@@ -16,6 +18,7 @@ import java.util.Map;
 
 import static org.bsc.langgraph4j.StateGraph.END;
 import static org.bsc.langgraph4j.StateGraph.START;
+import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 
 @Slf4j
 public class CodeGenWorkflow {
@@ -32,13 +35,20 @@ public class CodeGenWorkflow {
                     .addNode("router", RouterNode.create())
                     .addNode("code_generator", CodeGeneratorNode.create())
                     .addNode("project_builder", ProjectBuilderNode.create())
+                    .addNode("code_quality_check", CodeQualityCheckNode.create())
 
                     // 添加边
                     .addEdge(START, "image_collector")
                     .addEdge("image_collector", "prompt_enhancer")
                     .addEdge("prompt_enhancer", "router")
                     .addEdge("router", "code_generator")
-                    .addEdge("code_generator", "project_builder")
+                    .addEdge("code_generator", "code_quality_check")
+                    .addConditionalEdges("code_quality_check",
+                            edge_async(this::routeAfterQualityCheck),
+                            Map.of( "fail" ,"code_quality_check",
+                                    "build", "project_builder",  // 需要构建的情况
+                                    "skip_build", END             // 跳过构建直接结束
+                            ))
                     .addEdge("project_builder", END)
 
                     // 编译工作流
@@ -46,6 +56,31 @@ public class CodeGenWorkflow {
         } catch (GraphStateException e) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "工作流创建失败");
         }
+    }
+
+
+    private String routeAfterQualityCheck(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+        QualityResult qualityResult = context.getQualityResult();
+        // 如果质检失败，重新生成代码
+        if (qualityResult == null || !qualityResult.getIsValid()) {
+            log.error("代码质检失败，需要重新生成代码");
+            return "fail";
+        }
+        // 质检通过，使用原有的构建路由逻辑
+        log.info("代码质检通过，继续后续流程");
+        return routeBuildOrSkip(state);
+    }
+
+    private String routeBuildOrSkip(MessagesState<String> stringMessagesState) {
+
+        WorkflowContext context = WorkflowContext.getContext(stringMessagesState);
+        GeneratorTypeEnum generationType = context.getGenerationType();
+        if(generationType==GeneratorTypeEnum.VUE_PROJECT){
+            return "build";
+        }
+        return "skip_build";
+
     }
 
     /**
