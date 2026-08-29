@@ -22,6 +22,8 @@ import com.szb.aicode.model.dto.app.AppUpdateRequest;
 import com.szb.aicode.model.entity.User;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.model.vo.AppVo;
+import com.szb.aicode.ratelimiter.annotation.RateLimit;
+import com.szb.aicode.ratelimiter.enums.RateLimitType;
 import com.szb.aicode.service.ChatHistoryService;
 import com.szb.aicode.service.DownloadProjectService;
 import com.szb.aicode.service.UserService;
@@ -117,6 +119,7 @@ public class AppController {
     }
 
     @GetMapping(value = "/gene",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> gene(@RequestParam String message,
                                            @RequestParam Long appId,
                                            HttpServletRequest request) {
