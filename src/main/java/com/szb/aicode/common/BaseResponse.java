@@ -12,6 +12,12 @@ public class BaseResponse<T> {
 
     private String message;
 
+    /**
+     * Jackson 从 Redis 缓存反序列化响应对象时使用。
+     */
+    public BaseResponse() {
+    }
+
     public BaseResponse(int code, T data, String message) {
         this.code = code;
         this.data = data;
