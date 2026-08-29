@@ -7,6 +7,7 @@ import com.szb.aicode.ai.tools.FileWriterTool;
 import com.szb.aicode.ai.tools.ToolManager;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.service.ChatHistoryService;
+import com.szb.aicode.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -18,23 +19,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.swing.*;
 import java.time.Duration;
 
 @Configuration
 @Slf4j
 public class CodeGeneratorServiceFactory {
-    
-    @Resource
+
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
 
     @Resource
     private ChatHistoryService chatHistoryService;
 
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
-
-    @Resource( name= "ReasoningStreamingChatModel")
-    private StreamingChatModel reasoningStreamingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -73,19 +70,25 @@ public class CodeGeneratorServiceFactory {
                 .build();
         chatHistoryService.loadMemory(appId,chatMemory,20);
         return switch (generatorTypeEnum) {
-            case MULTI_FILE,HTML->AiServices.builder(AiGeneratorCodeService.class).
-                    streamingChatModel(openAiStreamingChatModel)
-                    .chatModel(chatModel)
-                    .chatMemory(chatMemory)
-                    .build();
-            case VUE_PROJECT -> AiServices.builder(AiGeneratorCodeService.class)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatModel(chatModel)
-                    .tools(toolManager.getAllTool())
-                    .chatMemoryProvider(memoryId->chatMemory)
-                    .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
-                            toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
-                    )).build();
+            case MULTI_FILE,HTML-> {
+                StreamingChatModel streamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
+                yield  AiServices.builder(AiGeneratorCodeService.class).
+                        streamingChatModel(streamingChatModel)
+                        .chatModel(chatModel)
+                        .chatMemory(chatMemory)
+                        .build();
+            }
+            case VUE_PROJECT -> {
+                StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamChatModelPrototype", StreamingChatModel.class);
+                yield  AiServices.builder(AiGeneratorCodeService.class)
+                        .streamingChatModel(reasoningStreamingChatModel)
+                        .chatModel(chatModel)
+                        .tools(toolManager.getAllTool())
+                        .chatMemoryProvider(memoryId -> chatMemory)
+                        .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                                toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
+                        )).build();
+            }
         };
 
     }

@@ -1,17 +1,25 @@
 package com.szb.aicode.langgraph4j.node;
 
 import com.szb.aicode.ai.AiGenRoutingService;
+import com.szb.aicode.ai.AiGenRoutingServiceFactory;
 import com.szb.aicode.langgraph4j.state.WorkflowContext;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
 import com.szb.aicode.utils.SpringContextUtil;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
+import org.springframework.stereotype.Component;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 @Slf4j
+
 public class RouterNode {
+
+    @Resource
+    private AiGenRoutingServiceFactory aiGenRoutingServiceFactory;
+
     public static AsyncNodeAction<MessagesState<String>> create() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
@@ -20,8 +28,8 @@ public class RouterNode {
             GeneratorTypeEnum generationType;
             try {
                 // 获取AI路由服务
-                AiGenRoutingService routingService = SpringContextUtil.getBean(AiGenRoutingService.class);
-                // 根据原始提示词进行智能路由
+                AiGenRoutingServiceFactory genRoutingServiceFactory = SpringContextUtil.getBean("aiGenRoutingServiceFactory", AiGenRoutingServiceFactory.class);// 根据原始提示词进行智能路由
+                AiGenRoutingService routingService = genRoutingServiceFactory.createAiGenRoutingService();
                 generationType = routingService.routingType(context.getOriginalPrompt());
                 log.info("AI智能路由完成，选择类型: {} ({})", generationType.getValue(), generationType.getText());
             } catch (Exception e) {

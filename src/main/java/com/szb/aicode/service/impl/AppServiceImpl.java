@@ -77,8 +77,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     @Resource
     private ScreenshotService screenshotService;
 
-    @Resource
-    private AiGenRoutingService aiGenRoutingService;
 
     @Resource
     private AiGenRoutingServiceFactory aiGenRoutingServiceFactory;
@@ -104,15 +102,16 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
 
+        AiGenRoutingService aiGenRoutingService = aiGenRoutingServiceFactory.createAiGenRoutingService();
+
         GeneratorTypeEnum generatorTypeEnum = aiGenRoutingService.routingType(initPrompt);
 
         app.setCodeGenType(generatorTypeEnum.getValue());
         // 插入数据库
         boolean result = save(app);
 
-        AiGenRoutingService aiGenRoutingService1 = aiGenRoutingServiceFactory.getAiGenRoutingService();
 
-        String name = aiGenRoutingService1.getName(initPrompt);
+        String name = aiGenRoutingService.getName(initPrompt);
 
         app.setAppName(name);
 

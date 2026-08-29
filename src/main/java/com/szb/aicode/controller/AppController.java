@@ -67,8 +67,7 @@ public class AppController {
     @Resource
     private DownloadProjectService downloadProjectService;
 
-    @Resource
-    private AiGenRoutingService aiGenRoutingService;
+
 
 
     @GetMapping("/download/{appId}")
@@ -79,6 +78,10 @@ public class AppController {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
 
         User loginUser = userService.getLoginUser(request);
+
+        if(loginUser == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+        }
 
         App app = appService.getById(appId);
         if(app == null){
