@@ -3,6 +3,8 @@ package com.szb.aicode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.szb.aicode.ai.guardrail.PromptSafetyInputGuardrail;
+import com.szb.aicode.ai.guardrail.RetryOutputGuardrail;
 import com.szb.aicode.ai.tools.FileWriterTool;
 import com.szb.aicode.ai.tools.ToolManager;
 import com.szb.aicode.model.enums.GeneratorTypeEnum;
@@ -76,6 +78,8 @@ public class CodeGeneratorServiceFactory {
                         streamingChatModel(streamingChatModel)
                         .chatModel(chatModel)
                         .chatMemory(chatMemory)
+                        .maxSequentialToolsInvocations(20)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
             case VUE_PROJECT -> {
@@ -83,7 +87,10 @@ public class CodeGeneratorServiceFactory {
                 yield  AiServices.builder(AiGeneratorCodeService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatModel(chatModel)
+                        .maxSequentialToolsInvocations(20)
                         .tools(toolManager.getAllTool())
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
+                        .outputGuardrails(new RetryOutputGuardrail())
                         .chatMemoryProvider(memoryId -> chatMemory)
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()

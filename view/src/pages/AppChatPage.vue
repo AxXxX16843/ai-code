@@ -401,13 +401,21 @@ const generateCode = async (userMessage, aiMessageIndex) => {
     await handleGenerationDone()
   }
 
-  const failStream = (error) => {
+  const failStream = (error, displayMessage = '') => {
     if (streamCompleted) return
     streamCompleted = true
     if (flushTimer !== null) clearTimeout(flushTimer)
     flushContent()
     eventSource?.close()
-    handleError(error, aiMessageIndex)
+    if (displayMessage) {
+      messages.value[aiMessageIndex].content = `❌ ${displayMessage}`
+      messages.value[aiMessageIndex].loading = false
+      previewState.value = 'idle'
+      isGenerating.value = false
+      message.error(displayMessage)
+    } else {
+      handleError(error, aiMessageIndex)
+    }
   }
 
   try {
@@ -480,6 +488,22 @@ const generateCode = async (userMessage, aiMessageIndex) => {
 
     eventSource.addEventListener('generation-error', function (event) {
       failStream(new Error(event.data || '项目生成失败'))
+    })
+
+    // 处理业务错误事件（例如后端限流、额度不足等可预期错误）
+    eventSource.addEventListener('business-error', function (event) {
+      if (streamCompleted) return
+
+      try {
+        const errorData = JSON.parse(event.data)
+        console.error('SSE业务错误事件:', errorData)
+
+        const errorMessage = errorData?.message || '生成过程中出现错误'
+        failStream(new Error(errorMessage), errorMessage)
+      } catch (parseError) {
+        console.error('解析错误事件失败:', parseError, '原始数据:', event.data)
+        failStream(new Error('服务器返回错误'))
+      }
     })
 
     eventSource.onerror = function () {
