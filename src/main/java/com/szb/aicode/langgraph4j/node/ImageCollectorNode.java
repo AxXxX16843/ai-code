@@ -1,10 +1,8 @@
 package com.szb.aicode.langgraph4j.node;
 
 import com.szb.aicode.langgraph4j.ai.ImageCollectionPlanService;
-import com.szb.aicode.langgraph4j.ai.ImageCollectionService;
 import com.szb.aicode.langgraph4j.model.ImageCollectionPlan;
 import com.szb.aicode.langgraph4j.model.ImageResource;
-import com.szb.aicode.langgraph4j.model.enums.ImageCategoryEnum;
 import com.szb.aicode.langgraph4j.state.WorkflowContext;
 import com.szb.aicode.langgraph4j.tools.ImageSearchTool;
 import com.szb.aicode.langgraph4j.tools.LogoGeneratorTool;

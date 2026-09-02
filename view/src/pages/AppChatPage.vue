@@ -82,7 +82,7 @@
               :disabled="!canChat || isGenerating"
               :placeholder="canChat ? '请描述你想生成的网站，越详细效果越好哦' : '无法在别人的作品下对话哦~'"
               :auto-size="{ minRows: 2, maxRows: 4 }"
-              @pressEnter="handleSend"
+              @pressEnter.prevent="handleSend"
             />
           </a-tooltip>
           <div class="chat-input-tools">
@@ -301,9 +301,27 @@ const handleError = (error, aiMessageIndex) => {
   console.error('生成代码失败：', error)
   messages.value[aiMessageIndex].content = '抱歉，生成过程中出现了错误，请重试。'
   messages.value[aiMessageIndex].loading = false
-  previewState.value = 'idle'
+  // 生成新版本失败时保留已有预览，避免右侧页面被错误状态清空。
+  previewState.value = previewUrl.value ? 'ready' : 'idle'
   message.error('生成失败，请重试')
   isGenerating.value = false
+}
+
+// 将护轨、限流等后端拒绝转换为更符合对话语境的提示。
+const getFriendlyBusinessErrorMessage = (errorMessage) => {
+  const text = String(errorMessage || '').toLowerCase()
+  const safetyKeywords = [
+    '系统错误',
+    '输入包含不当内容',
+    '检测到恶意输入',
+    '请求被拒绝',
+    'guardrail',
+    'safety',
+  ]
+  if (safetyKeywords.some((keyword) => text.includes(keyword.toLowerCase()))) {
+    return '这条需求我暂时无法处理，请换一种方式描述页面功能，我会继续帮你生成。'
+  }
+  return errorMessage || '生成过程中出现了一点问题，请稍后再试。'
 }
 
 // 生成完成后的处理：Vue 项目是异步构建，轮询预览直到 dist 就绪
@@ -410,7 +428,8 @@ const generateCode = async (userMessage, aiMessageIndex) => {
     if (displayMessage) {
       messages.value[aiMessageIndex].content = `❌ ${displayMessage}`
       messages.value[aiMessageIndex].loading = false
-      previewState.value = 'idle'
+      // 拒绝当前请求不代表已有网站失效，继续保留原预览。
+      previewState.value = previewUrl.value ? 'ready' : 'idle'
       isGenerating.value = false
       message.error(displayMessage)
     } else {
@@ -477,8 +496,7 @@ const generateCode = async (userMessage, aiMessageIndex) => {
         }
       } catch (error) {
         console.error('解析消息失败:', error)
-        if (flushTimer !== null) clearTimeout(flushTimer)
-        handleError(error, aiMessageIndex)
+        failStream(error)
       }
     }
 
@@ -498,7 +516,7 @@ const generateCode = async (userMessage, aiMessageIndex) => {
         const errorData = JSON.parse(event.data)
         console.error('SSE业务错误事件:', errorData)
 
-        const errorMessage = errorData?.message || '生成过程中出现错误'
+        const errorMessage = getFriendlyBusinessErrorMessage(errorData?.message)
         failStream(new Error(errorMessage), errorMessage)
       } catch (parseError) {
         console.error('解析错误事件失败:', parseError, '原始数据:', event.data)
@@ -531,7 +549,9 @@ const handleSend = async () => {
   messages.value.push({ role: 'user', content: userMessage })
   const aiMessageIndex = messages.value.length
   messages.value.push({ role: 'ai', content: '', loading: true })
+  // 先清空受控输入值，并等待 DOM 同步，避免回车事件结束后旧文本重新写回输入框。
   inputValue.value = ''
+  await nextTick()
   isGenerating.value = true
   exitEditMode()
   scrollToBottom()

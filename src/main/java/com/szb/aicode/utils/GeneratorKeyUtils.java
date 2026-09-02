@@ -13,7 +13,6 @@ public class GeneratorKeyUtils {
         }
         String jsonStr = JSONUtil.toJsonStr(obj);
         return DigestUtil.md5Hex(jsonStr);
-
     }
 
 }

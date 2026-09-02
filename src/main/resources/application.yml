@@ -15,6 +15,7 @@ spring:
       port: 6379
       host: localhost
       ttl: 3600
+      password:
 server:
   port: 8300
   servlet:
